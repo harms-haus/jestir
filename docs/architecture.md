@@ -444,7 +444,7 @@ sequenceDiagram
 
 ## Database Schema
 
-Since we're using LightRAG for read-only entity retrieval, we define the logical schema:
+Since we're using LightRAG for read-only entity retrieval, we define the logical schema that LightRAG should adhere to on retrieval:
 
 ```python
 # LightRAG Entity Retrieval Structure

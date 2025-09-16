@@ -249,23 +249,7 @@ so that I can reference them in new stories.
 5. Output in readable table format
 6. Export option to YAML for context file use
 
-### Story 2.4: Manual LightRAG Data Entry
-
-As a parent,
-I want to manually add new characters and locations to LightRAG after reading a story,
-so that they can be referenced in future stories.
-
-**Acceptance Criteria:**
-
-1. Command `story add-to-lightrag character --name "X" --description "Y"` adds character to LightRAG
-2. Command `story add-to-lightrag location --name "X" --type "interior" --description "Y"` adds location to LightRAG
-3. Command `story add-to-lightrag item --name "X" --properties "magical,glowing"` adds item to LightRAG
-4. Entity validation ensures required fields are present
-5. Duplicate detection with confirmation prompt
-6. Success confirmation with entity ID
-7. Unit tests for each command type
-
-### Story 2.5: Context Validation Command
+### Story 2.4: Context Validation Command
 
 As a parent,
 I want to validate a context file before generation,
