@@ -1,6 +1,6 @@
 """Story context model for complete story generation state."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Dict, List, Any, Optional, Callable
 from datetime import datetime
 from .entity import Entity
@@ -70,9 +70,8 @@ class StoryContext(BaseModel):
         """Update the updated_at timestamp."""
         self.metadata["updated_at"] = datetime.now().isoformat()
 
-    class Config:
-        """Pydantic configuration."""
-
-        json_encoders: dict[type, Callable] = {
+    model_config = ConfigDict(
+        json_encoders={
             # Add any custom encoders if needed
         }
+    )

@@ -1,6 +1,6 @@
 """Relationship model for entity interactions."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Dict, Any, Union, Optional, Callable
 
 
@@ -24,9 +24,8 @@ class Relationship(BaseModel):
         default_factory=dict, description="Additional relationship data"
     )
 
-    class Config:
-        """Pydantic configuration."""
-
-        json_encoders: dict[type, Callable] = {
+    model_config = ConfigDict(
+        json_encoders={
             # Add any custom encoders if needed
         }
+    )

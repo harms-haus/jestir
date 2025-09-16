@@ -98,7 +98,7 @@ class TestStoryContext:
         assert "version" in context.metadata
         assert "created_at" in context.metadata
         assert "updated_at" in context.metadata
-        assert context.settings["genre"] == "fantasy"
+        assert context.settings["genre"] == "adventure"
         assert context.entities == {}
         assert context.relationships == []
         assert context.user_inputs == {}

@@ -1,6 +1,6 @@
 """Entity model for story characters, locations, and items."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Dict, Any, Optional, Callable
 
 
@@ -25,9 +25,8 @@ class Entity(BaseModel):
         default_factory=dict, description="Type-specific attributes"
     )
 
-    class Config:
-        """Pydantic configuration."""
-
-        json_encoders: dict[type, Callable] = {
+    model_config = ConfigDict(
+        json_encoders={
             # Add any custom encoders if needed
         }
+    )
