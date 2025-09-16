@@ -315,8 +315,8 @@ graph TD
 
 - **Purpose:** Generate context, outlines, and stories using GPT models
 - **Documentation:** https://platform.openai.com/docs
-- **Base URL(s):** https://api.openai.com/v1
-- **Authentication:** API key via environment variable
+- **Base URL(s):** https://api.openai.com/v1 (configurable via `OPENAI_BASE_URL` environment variable)
+- **Authentication:** API key via `OPENAI_API_KEY` environment variable
 - **Rate Limits:** 90,000 TPM for GPT-4, monitoring via TokenTracker
 
 **Key Endpoints Used:**
@@ -622,8 +622,9 @@ Development (local) -> Testing (CI) -> Release (PyPI/GitHub)
 - **Auth Method:** API key for OpenAI only
 - **Session Management:** Not applicable for CLI
 - **Required Patterns:**
-  - API keys only via environment variables
-  - Never log API keys
+  - API keys only via environment variables (`OPENAI_API_KEY`)
+  - Base URLs configurable via environment variables (`OPENAI_BASE_URL`)
+  - Never log API keys or sensitive configuration
 
 ### Secrets Management
 

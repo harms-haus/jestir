@@ -14,8 +14,9 @@
 - **Auth Method:** API key for OpenAI only
 - **Session Management:** Not applicable for CLI
 - **Required Patterns:**
-  - API keys only via environment variables
-  - Never log API keys
+  - API keys only via environment variables (`OPENAI_API_KEY`)
+  - Base URLs configurable via environment variables (`OPENAI_BASE_URL`)
+  - Never log API keys or sensitive configuration
 
 ## Secrets Management
 
