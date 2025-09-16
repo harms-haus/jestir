@@ -1,6 +1,6 @@
 # Epic 1: Foundation & Core Pipeline
 
-**Epic Goal:** Establish project setup with Python CLI structure, implement the core 3-stage pipeline (context → outline → story), and create a working prototype that can generate a complete bedtime story from natural language input.
+**Epic Goal:** Establish project setup with Python CLI structure, implement the core 3-stage pipeline (context → outline → story), and create a working prototype that can generate a complete bedtime story from natural language input using OpenAI AI parsing.
 
 ## Story 1.1: Project Initialization and Setup
 
@@ -21,7 +21,7 @@ so that I have a maintainable codebase with all required tools.
 ## Story 1.2: Context Generation Pipeline
 
 As a parent,
-I want to input a natural language story request and generate a context file,
+I want to input a natural language story request and generate a context file using OpenAI AI parsing,
 so that I have a structured representation of my story requirements.
 
 **Acceptance Criteria:**
@@ -75,7 +75,7 @@ so that I can verify the system works as designed.
 **Acceptance Criteria:**
 
 1. Integration test runs all three stages sequentially
-2. Test covers entity extraction and relationship parsing
+2. Test covers entity extraction and relationship parsing using OpenAI AI
 3. Mock OpenAI responses for consistent testing
 4. Verify file outputs at each stage
 5. Validate context.yaml maintains complete history

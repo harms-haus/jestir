@@ -13,7 +13,7 @@
 | **Language** | Python | 3.8+ | Primary development language | Type hints, broad compatibility, rich ecosystem |
 | **Package Manager** | Poetry | 1.7+ | Dependency management | Lock file support, virtual env management |
 | **CLI Framework** | Click | 8.1+ | Command-line interface | Declarative commands, automatic help, testing support |
-| **LLM Integration** | OpenAI Python SDK | 1.0+ | AI content generation | Official SDK, async support, token counting |
+| **LLM Integration** | OpenAI Python SDK | 1.0+ | AI content generation | Official SDK, async support, token counting, dual client support |
 | **Vector Retrieval** | LightRAG | Latest | Entity retrieval | Graph-based retrieval, natural language queries |
 | **Data Format** | PyYAML | 6.0 | Context file handling | Human-readable, preserves structure |
 | **Template Engine** | Custom | N/A | Simple {{key}} substitution | Minimal complexity, easy to understand |

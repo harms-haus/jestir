@@ -41,23 +41,23 @@ graph TD
     A[User Input<br/>Natural Language] --> B[Context Generator]
     B --> C[(LightRAG<br/>Entity Retrieval)]
     B --> D[context.yaml]
-    
+
     D --> E[Outline Generator]
     E --> F[outline.md]
-    
+
     F --> G[Story Writer]
     G --> H[story.md]
-    
+
     I[Templates<br/>Directory] --> B
     I --> E
     I --> G
-    
+
     J[OpenAI API] --> B
     J --> E
     J --> G
-    
+
     K[Token Tracker] --> J
-    
+
     style D fill:#f9f,stroke:#333,stroke-width:2px
     style F fill:#f9f,stroke:#333,stroke-width:2px
     style H fill:#f9f,stroke:#333,stroke-width:2px
@@ -88,7 +88,7 @@ Now, let me detail the technology stack. This is critical for your implementatio
 | **Language** | Python | 3.8+ | Primary development language | Type hints, broad compatibility, rich ecosystem |
 | **Package Manager** | Poetry | 1.7+ | Dependency management | Lock file support, virtual env management |
 | **CLI Framework** | Click | 8.1+ | Command-line interface | Declarative commands, automatic help, testing support |
-| **LLM Integration** | OpenAI Python SDK | 1.0+ | AI content generation | Official SDK, async support, token counting |
+| **LLM Integration** | OpenAI Python SDK | 1.0+ | AI content generation | Official SDK, async support, token counting, dual client support |
 | **Vector Retrieval** | LightRAG | Latest | Entity retrieval | Graph-based retrieval, natural language queries |
 | **Data Format** | PyYAML | 6.0 | Context file handling | Human-readable, preserves structure |
 | **Template Engine** | Custom | N/A | Simple {{key}} substitution | Minimal complexity, easy to understand |
@@ -100,6 +100,32 @@ Now, let me detail the technology stack. This is critical for your implementatio
 | **Validation** | Pydantic | 2.0+ | Data validation | Type-safe YAML parsing, automatic validation |
 
 ## Data Models
+
+### OpenAI Configuration Models
+
+#### ExtractionAPIConfig Model
+
+**Purpose:** Configuration for OpenAI API used for information extraction (entities and relationships)
+
+**Key Attributes:**
+
+- api_key: string - OpenAI API key for extraction endpoint (from `OPENAI_EXTRACTION_API_KEY`)
+- base_url: string - Base URL for extraction API (from `OPENAI_EXTRACTION_BASE_URL`, default: https://api.openai.com/v1)
+- model: string - Model to use for extraction (from `OPENAI_EXTRACTION_MODEL`, recommended: gpt-4o-mini, gpt-4o, gpt-oss:20b)
+- max_tokens: int - Maximum tokens for extraction requests (from `OPENAI_EXTRACTION_MAX_TOKENS`)
+- temperature: float - Temperature setting for extraction (from `OPENAI_EXTRACTION_TEMPERATURE`, lower for more consistent results)
+
+#### CreativeAPIConfig Model
+
+**Purpose:** Configuration for OpenAI API used for creative generation (outlines and stories)
+
+**Key Attributes:**
+
+- api_key: string - OpenAI API key for creative endpoint (from `OPENAI_CREATIVE_API_KEY`)
+- base_url: string - Base URL for creative API (from `OPENAI_CREATIVE_BASE_URL`, default: https://api.openai.com/v1)
+- model: string - Model to use for creative generation (from `OPENAI_CREATIVE_MODEL`, recommended: gpt-4o, gpt-4, gpt-oss:120b)
+- max_tokens: int - Maximum tokens for creative requests (from `OPENAI_CREATIVE_MAX_TOKENS`)
+- temperature: float - Temperature setting for creative generation (from `OPENAI_CREATIVE_TEMPERATURE`, higher for more creativity)
 
 ### Context Entity Model
 
@@ -168,7 +194,7 @@ Now, let me detail the technology stack. This is critical for your implementatio
 **Key Interfaces:**
 
 - `context` command → ContextGenerator
-- `outline` command → OutlineGenerator  
+- `outline` command → OutlineGenerator
 - `write` command → StoryWriter
 - Search/list commands → EntityRepository
 - Manual data entry commands → EntityRepository
@@ -179,17 +205,17 @@ Now, let me detail the technology stack. This is critical for your implementatio
 
 ### ContextGenerator Component
 
-**Responsibility:** Parse natural language input and create structured context
+**Responsibility:** Parse natural language input using OpenAI AI to extract entities and relationships, creating structured context
 
 **Key Interfaces:**
 
 - `generate(input_text: str, existing_context: Optional[StoryContext]) → StoryContext`
-- `extract_entities(text: str) → List[Entity]`
-- `extract_relationships(text: str, entities: List[Entity]) → List[Relationship]`
+- `extract_entities(text: str) → List[Entity]` - Uses OpenAI AI to parse natural language and identify entities
+- `extract_relationships(text: str, entities: List[Entity]) → List[Relationship]` - Uses OpenAI AI to parse natural language and extract relationships
 
-**Dependencies:** EntityRepository, TemplateManager, OpenAIClient
+**Dependencies:** EntityRepository, TemplateManager, OpenAIClient (Extraction)
 
-**Technology Stack:** Pydantic for validation, PyYAML for serialization
+**Technology Stack:** Pydantic for validation, PyYAML for serialization, OpenAI SDK for information extraction
 
 ### OutlineGenerator Component
 
@@ -200,9 +226,9 @@ Now, let me detail the technology stack. This is critical for your implementatio
 - `generate(context: StoryContext) → str`
 - `apply_length_constraints(outline: str, target_words: int) → str`
 
-**Dependencies:** TemplateManager, OpenAIClient, TokenTracker
+**Dependencies:** TemplateManager, OpenAIClient (Creative), TokenTracker
 
-**Technology Stack:** OpenAI SDK, Markdown generation
+**Technology Stack:** OpenAI SDK for creative generation, Markdown generation
 
 ### StoryWriter Component
 
@@ -214,11 +240,11 @@ Now, let me detail the technology stack. This is critical for your implementatio
 - `estimate_reading_time(story: str) → float`
 - `count_words(story: str) → int`
 
-**Dependencies:** TemplateManager, OpenAIClient, TokenTracker
+**Dependencies:** TemplateManager, OpenAIClient (Creative), TokenTracker
 
-**Technology Stack:** OpenAI SDK, Markdown formatting
+**Technology Stack:** OpenAI SDK for creative generation, Markdown formatting
 
-### EntityRepository Component  
+### EntityRepository Component
 
 **Responsibility:** Interface with LightRAG for entity retrieval
 
@@ -268,62 +294,115 @@ graph TD
     subgraph "CLI Layer"
         CLI[CLI Interface]
     end
-    
+
     subgraph "Service Layer"
         CG[Context Generator]
         OG[Outline Generator]
         SW[Story Writer]
     end
-    
+
     subgraph "Repository Layer"
         ER[Entity Repository]
         TM[Template Manager]
         TT[Token Tracker]
     end
-    
+
     subgraph "External Services"
-        OAI[OpenAI Client]
+        OAI_EXT[OpenAI Client (Extraction)]
+        OAI_CREAT[OpenAI Client (Creative)]
         LR[(LightRAG)]
         FS[(File System)]
     end
-    
+
     CLI --> CG
     CLI --> OG
     CLI --> SW
     CLI --> ER
-    
+
     CG --> ER
     CG --> TM
-    CG --> OAI
-    
+    CG --> OAI_EXT
+
     OG --> TM
-    OG --> OAI
+    OG --> OAI_CREAT
     OG --> TT
-    
+
     SW --> TM
-    SW --> OAI
+    SW --> OAI_CREAT
     SW --> TT
-    
+
     ER --> LR
     TM --> FS
-    OAI --> TT
+    OAI_EXT --> TT
+    OAI_CREAT --> TT
 ```
 
 ## External APIs
 
-### OpenAI API
+### OpenAI API (Information Extraction)
 
-- **Purpose:** Generate context, outlines, and stories using GPT models
+- **Purpose:** Extract entities and relationships from natural language input
 - **Documentation:** https://platform.openai.com/docs
-- **Base URL(s):** https://api.openai.com/v1 (configurable via `OPENAI_BASE_URL` environment variable)
-- **Authentication:** API key via `OPENAI_API_KEY` environment variable
+- **Base URL(s):** https://api.openai.com/v1 (configurable via `OPENAI_EXTRACTION_BASE_URL` environment variable)
+- **Authentication:** API key via `OPENAI_EXTRACTION_API_KEY` environment variable
+- **Model:** Configurable via `OPENAI_EXTRACTION_MODEL` environment variable (default: gpt-4o-mini)
+- **Max Tokens:** Configurable via `OPENAI_EXTRACTION_MAX_TOKENS` environment variable
+- **Temperature:** Configurable via `OPENAI_EXTRACTION_TEMPERATURE` environment variable (default: 0.1)
 - **Rate Limits:** 90,000 TPM for GPT-4, monitoring via TokenTracker
+- **Recommended Models:** GPT-4o-mini, GPT-4o, gpt-oss:20b (for accuracy in structured data extraction)
 
 **Key Endpoints Used:**
 
-- `POST /chat/completions` - All content generation
+- `POST /chat/completions` - Entity and relationship extraction
+
+### OpenAI API (Creative Generation)
+
+- **Purpose:** Generate story outlines and creative content
+- **Documentation:** https://platform.openai.com/docs
+- **Base URL(s):** https://api.openai.com/v1 (configurable via `OPENAI_CREATIVE_BASE_URL` environment variable)
+- **Authentication:** API key via `OPENAI_CREATIVE_API_KEY` environment variable
+- **Model:** Configurable via `OPENAI_CREATIVE_MODEL` environment variable (default: gpt-4o)
+- **Max Tokens:** Configurable via `OPENAI_CREATIVE_MAX_TOKENS` environment variable
+- **Temperature:** Configurable via `OPENAI_CREATIVE_TEMPERATURE` environment variable (default: 0.7)
+- **Rate Limits:** 90,000 TPM for GPT-4, monitoring via TokenTracker
+- **Recommended Models:** GPT-4o, GPT-4, gpt-oss:120b (for creative quality and narrative coherence)
+
+**Key Endpoints Used:**
+
+- `POST /chat/completions` - Outline and story generation
 
 **Integration Notes:** Retry logic with exponential backoff, timeout handling, streaming responses for long content
+
+## Environment Variables Summary
+
+### Information Extraction Endpoint
+- `OPENAI_EXTRACTION_API_KEY` - API key for extraction endpoint
+- `OPENAI_EXTRACTION_BASE_URL` - Base URL for extraction API (default: https://api.openai.com/v1)
+- `OPENAI_EXTRACTION_MODEL` - Model for extraction (default: gpt-4o-mini)
+- `OPENAI_EXTRACTION_MAX_TOKENS` - Maximum tokens for extraction requests
+- `OPENAI_EXTRACTION_TEMPERATURE` - Temperature for extraction (default: 0.1)
+
+### Creative Generation Endpoint
+- `OPENAI_CREATIVE_API_KEY` - API key for creative endpoint
+- `OPENAI_CREATIVE_BASE_URL` - Base URL for creative API (default: https://api.openai.com/v1)
+- `OPENAI_CREATIVE_MODEL` - Model for creative generation (default: gpt-4o)
+- `OPENAI_CREATIVE_MAX_TOKENS` - Maximum tokens for creative requests
+- `OPENAI_CREATIVE_TEMPERATURE` - Temperature for creative generation (default: 0.7)
+
+### Example Configuration
+```bash
+# Use different models for different tasks
+export OPENAI_EXTRACTION_MODEL="gpt-oss:20b"
+export OPENAI_CREATIVE_MODEL="gpt-oss:120b"
+
+# Use different endpoints if needed
+export OPENAI_EXTRACTION_BASE_URL="https://your-extraction-endpoint.com/v1"
+export OPENAI_CREATIVE_BASE_URL="https://your-creative-endpoint.com/v1"
+
+# Fine-tune parameters
+export OPENAI_EXTRACTION_TEMPERATURE="0.1"  # Lower for consistent extraction
+export OPENAI_CREATIVE_TEMPERATURE="0.8"    # Higher for more creativity
+```
 
 ## Core Workflows
 
@@ -333,31 +412,32 @@ sequenceDiagram
     participant CLI
     participant ContextGen
     participant LightRAG
-    participant OpenAI
+    participant OpenAI_EXT[OpenAI (Extraction)]
+    participant OpenAI_CREAT[OpenAI (Creative)]
     participant FileSystem
-    
+
     User->>CLI: story context "purple dragon story"
     CLI->>ContextGen: generate(input)
     ContextGen->>LightRAG: search existing entities
     LightRAG-->>ContextGen: return matches
-    ContextGen->>OpenAI: extract entities and relations
-    OpenAI-->>ContextGen: parsed content
+    ContextGen->>OpenAI_EXT: parse natural language to extract entities and relationships
+    OpenAI_EXT-->>ContextGen: parsed content
     ContextGen->>FileSystem: write context.yaml
     FileSystem-->>User: context.yaml created
-    
+
     User->>CLI: story outline context.yaml
     CLI->>FileSystem: read context.yaml
-    CLI->>OpenAI: generate outline
-    OpenAI-->>CLI: outline content
+    CLI->>OpenAI_CREAT: generate outline
+    OpenAI_CREAT-->>CLI: outline content
     CLI->>FileSystem: write outline.md
     FileSystem-->>User: outline.md created
-    
+
     User->>User: Edit outline.md
-    
+
     User->>CLI: story write outline.md
     CLI->>FileSystem: read outline.md, context.yaml
-    CLI->>OpenAI: generate story
-    OpenAI-->>CLI: story content
+    CLI->>OpenAI_CREAT: generate story
+    OpenAI_CREAT-->>CLI: story content
     CLI->>FileSystem: write story.md
     FileSystem-->>User: story.md created
 ```

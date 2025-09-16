@@ -7,7 +7,7 @@
 **Key Interfaces:**
 
 - `context` command → ContextGenerator
-- `outline` command → OutlineGenerator  
+- `outline` command → OutlineGenerator
 - `write` command → StoryWriter
 - Search/list commands → EntityRepository
 - Manual data entry commands → EntityRepository
@@ -18,17 +18,17 @@
 
 ## ContextGenerator Component
 
-**Responsibility:** Parse natural language input and create structured context
+**Responsibility:** Parse natural language input using OpenAI AI to extract entities and relationships, creating structured context
 
 **Key Interfaces:**
 
 - `generate(input_text: str, existing_context: Optional[StoryContext]) → StoryContext`
-- `extract_entities(text: str) → List[Entity]`
-- `extract_relationships(text: str, entities: List[Entity]) → List[Relationship]`
+- `extract_entities(text: str) → List[Entity]` - Uses OpenAI AI to parse natural language and identify entities
+- `extract_relationships(text: str, entities: List[Entity]) → List[Relationship]` - Uses OpenAI AI to parse natural language and extract relationships
 
-**Dependencies:** EntityRepository, TemplateManager, OpenAIClient
+**Dependencies:** EntityRepository, TemplateManager, OpenAIClient (Extraction)
 
-**Technology Stack:** Pydantic for validation, PyYAML for serialization
+**Technology Stack:** Pydantic for validation, PyYAML for serialization, OpenAI SDK for information extraction
 
 ## OutlineGenerator Component
 
@@ -39,9 +39,9 @@
 - `generate(context: StoryContext) → str`
 - `apply_length_constraints(outline: str, target_words: int) → str`
 
-**Dependencies:** TemplateManager, OpenAIClient, TokenTracker
+**Dependencies:** TemplateManager, OpenAIClient (Creative), TokenTracker
 
-**Technology Stack:** OpenAI SDK, Markdown generation
+**Technology Stack:** OpenAI SDK for creative generation, Markdown generation
 
 ## StoryWriter Component
 
@@ -53,11 +53,11 @@
 - `estimate_reading_time(story: str) → float`
 - `count_words(story: str) → int`
 
-**Dependencies:** TemplateManager, OpenAIClient, TokenTracker
+**Dependencies:** TemplateManager, OpenAIClient (Creative), TokenTracker
 
-**Technology Stack:** OpenAI SDK, Markdown formatting
+**Technology Stack:** OpenAI SDK for creative generation, Markdown formatting
 
-## EntityRepository Component  
+## EntityRepository Component
 
 **Responsibility:** Interface with LightRAG for entity retrieval
 

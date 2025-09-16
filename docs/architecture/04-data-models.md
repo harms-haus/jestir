@@ -1,5 +1,31 @@
 # Data Models
 
+## OpenAI Configuration Models
+
+### ExtractionAPIConfig Model
+
+**Purpose:** Configuration for OpenAI API used for information extraction (entities and relationships)
+
+**Key Attributes:**
+
+- api_key: string - OpenAI API key for extraction endpoint (from `OPENAI_EXTRACTION_API_KEY`)
+- base_url: string - Base URL for extraction API (from `OPENAI_EXTRACTION_BASE_URL`, default: https://api.openai.com/v1)
+- model: string - Model to use for extraction (from `OPENAI_EXTRACTION_MODEL`, recommended: gpt-4o-mini, gpt-4o, gpt-oss:20b)
+- max_tokens: int - Maximum tokens for extraction requests (from `OPENAI_EXTRACTION_MAX_TOKENS`)
+- temperature: float - Temperature setting for extraction (from `OPENAI_EXTRACTION_TEMPERATURE`, lower for more consistent results)
+
+### CreativeAPIConfig Model
+
+**Purpose:** Configuration for OpenAI API used for creative generation (outlines and stories)
+
+**Key Attributes:**
+
+- api_key: string - OpenAI API key for creative endpoint (from `OPENAI_CREATIVE_API_KEY`)
+- base_url: string - Base URL for creative API (from `OPENAI_CREATIVE_BASE_URL`, default: https://api.openai.com/v1)
+- model: string - Model to use for creative generation (from `OPENAI_CREATIVE_MODEL`, recommended: gpt-4o, gpt-4, gpt-oss:120b)
+- max_tokens: int - Maximum tokens for creative requests (from `OPENAI_CREATIVE_MAX_TOKENS`)
+- temperature: float - Temperature setting for creative generation (from `OPENAI_CREATIVE_TEMPERATURE`, higher for more creativity)
+
 ## Context Entity Model
 
 **Purpose:** Represents all entities (characters, locations, items) in the story world
