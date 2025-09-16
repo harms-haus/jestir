@@ -86,6 +86,17 @@
 
 **Technology Stack:** Custom regex-based substitution
 
+### Prompt Templating
+
+The creative AI prompts (outline and story) are driven by external templates that use `{{key}}` substitution. Templates live under `templates/` (e.g., `templates/story_template.txt` and `templates/prompts/`). They accept the same template values exposed by the `StoryContext` model and used in services:
+
+- `{{genre}}`, `{{tone}}`, `{{length}}`, `{{age_appropriate}}`, `{{morals}}`
+- `{{characters}}`, `{{locations}}`, `{{items}}`
+- `{{plot_points}}`, `{{user_inputs}}`, `{{outline}}`
+- Derived helpers like `{{target_word_count}}` may be provided by the generator when rendering
+
+See the dedicated documentation in `docs/architecture/templating.md` for full details and examples.
+
 ## TokenTracker Component
 
 **Responsibility:** Monitor and report OpenAI API token usage
