@@ -1,0 +1,114 @@
+# Example Context File: Basic Adventure Story
+# This file demonstrates how to use the template system with a simple adventure story
+
+# Story Settings - These variables are used in outline and story generation templates
+settings:
+  genre: "adventure"
+  tone: "gentle"
+  length: "short"
+  age_appropriate: true
+  morals: ["courage", "friendship", "perseverance"]
+
+# User Input - This is the original request that gets processed
+user_inputs:
+  initial_request: "A brave little rabbit named Thumper goes on an adventure to find the magical carrot that will save his village from the great drought."
+
+# Entities - Characters, locations, and items in the story
+entities:
+  char_001:
+    id: "char_001"
+    type: "character"
+    subtype: "protagonist"
+    name: "Thumper"
+    description: "A brave little rabbit with soft brown fur and determined eyes"
+    existing: false
+    properties:
+      personality: "brave and curious"
+      age: "young"
+      special_ability: "incredible jumping"
+
+  char_002:
+    id: "char_002"
+    type: "character"
+    subtype: "supporting"
+    name: "Wise Old Owl"
+    description: "An ancient owl who knows the secrets of the forest"
+    existing: false
+    properties:
+      personality: "wise and mysterious"
+      knowledge: "forest secrets"
+      role: "mentor"
+
+  loc_001:
+    id: "loc_001"
+    type: "location"
+    subtype: "exterior"
+    name: "Whispering Woods"
+    description: "A magical forest where the trees seem to speak in gentle whispers"
+    existing: false
+    properties:
+      atmosphere: "mysterious and peaceful"
+      weather: "sunny with dappled light"
+      terrain: "dense forest with winding paths"
+
+  loc_002:
+    id: "loc_002"
+    type: "location"
+    subtype: "magical"
+    name: "Crystal Cave"
+    description: "A hidden cave filled with glowing crystals that hold ancient magic"
+    existing: false
+    properties:
+      magical_properties: "crystals that glow with inner light"
+      special_rules: "only the pure of heart can enter"
+      access_requirements: "must solve the riddle of the cave"
+
+  item_001:
+    id: "item_001"
+    type: "item"
+    subtype: "magical"
+    name: "Golden Carrot"
+    description: "A magical carrot that glows with golden light and has the power to bring rain"
+    existing: false
+    properties:
+      magical_power: "brings rain and prosperity"
+      appearance: "golden and glowing"
+      rarity: "legendary"
+
+# Relationships between entities
+relationships:
+  - type: "visits"
+    subject: "char_001"
+    object: "loc_001"
+    location: null
+    mentioned_at: ["goes on an adventure"]
+    metadata:
+      purpose: "to find the magical carrot"
+
+  - type: "meets"
+    subject: "char_001"
+    object: "char_002"
+    location: "loc_001"
+    mentioned_at: ["encounters the wise old owl"]
+    metadata:
+      outcome: "receives guidance"
+
+  - type: "finds"
+    subject: "char_001"
+    object: "item_001"
+    location: "loc_002"
+    mentioned_at: ["discovers the magical carrot"]
+    metadata:
+      significance: "saves the village"
+
+# Plot points - Key events in the story
+plot_points:
+  - "Thumper decides to leave his village to find the magical carrot"
+  - "Thumper enters the Whispering Woods and meets the Wise Old Owl"
+  - "The owl tells Thumper about the Crystal Cave and its riddle"
+  - "Thumper solves the riddle and enters the Crystal Cave"
+  - "Thumper finds the Golden Carrot and returns to save his village"
+
+# Timestamps
+created_at: "2024-01-15T10:30:00Z"
+updated_at: "2024-01-15T10:30:00Z"

@@ -489,6 +489,76 @@ def validate_templates(verbose, fix):
 
 
 @main.command()
+@click.argument("context_file")
+@click.option("--verbose", "-v", is_flag=True, help="Show detailed validation results")
+@click.option("--fix", is_flag=True, help="Attempt to fix common issues automatically")
+def validate(context_file, verbose, fix):
+    """Validate a context file for structure and consistency."""
+    try:
+        click.echo(f"Validating context file: {context_file}")
+
+        # Import the validation service
+        from .services.context_validator import ContextValidator
+
+        # Create validator instance
+        validator = ContextValidator()
+
+        # Load and validate context
+        validation_result = validator.validate_context_file(
+            context_file, verbose=verbose, auto_fix=fix
+        )
+
+        # Display results
+        if validation_result.is_valid:
+            click.echo("✅ Context file is valid!")
+            if validation_result.warnings:
+                click.echo(f"\n⚠️  {len(validation_result.warnings)} warnings found:")
+                for warning in validation_result.warnings:
+                    click.echo(f"  • {warning}")
+        else:
+            click.echo("❌ Context file has validation errors:")
+            for error in validation_result.errors:
+                click.echo(f"  • {error}")
+
+            if validation_result.suggestions:
+                click.echo("\n💡 Fix suggestions:")
+                for suggestion in validation_result.suggestions:
+                    click.echo(f"  • {suggestion}")
+
+            raise click.Abort()
+
+    except FileNotFoundError as e:
+        click.echo(f"❌ File Not Found: {str(e)}", err=True)
+        click.echo("💡 Troubleshooting:", err=True)
+        click.echo(f"   • Make sure the context file '{context_file}' exists", err=True)
+        click.echo(
+            f"   • Generate a context file first: 'jestir context \"your story idea\"'",
+            err=True,
+        )
+        click.echo(f"   • Check the file path is correct", err=True)
+        raise click.Abort()
+    except PermissionError as e:
+        click.echo(f"❌ Permission Error: Cannot read file - {str(e)}", err=True)
+        click.echo("💡 Tip: Check file permissions", err=True)
+        raise click.Abort()
+    except Exception as e:
+        error_msg = str(e).lower()
+        if "yaml" in error_msg or "parse" in error_msg:
+            click.echo(
+                f"❌ File Format Error: Invalid YAML format - {str(e)}", err=True
+            )
+            click.echo(
+                "💡 Tip: Check that the context file is valid YAML format", err=True
+            )
+        else:
+            click.echo(f"❌ Validation Error: {str(e)}", err=True)
+            click.echo(
+                "💡 Tip: Check that your context file is properly formatted", err=True
+            )
+        raise click.Abort()
+
+
+@main.command()
 @click.argument("entity_type", type=click.Choice(["characters", "locations", "items"]))
 @click.option("--query", "-q", help="Search query to filter results")
 @click.option(
