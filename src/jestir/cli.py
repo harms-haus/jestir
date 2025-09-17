@@ -10,6 +10,7 @@ from .services.context_generator import ContextGenerator
 from .services.outline_generator import OutlineGenerator
 from .services.story_writer import StoryWriter
 from .services.lightrag_client import LightRAGClient
+from .services.template_loader import TemplateLoader
 from .models.api_config import LightRAGAPIConfig
 
 
@@ -171,6 +172,173 @@ def write(outline_file, output, context):
         raise click.Abort()
     except Exception as e:
         click.echo(f"Error generating story: {str(e)}", err=True)
+        raise click.Abort()
+
+
+@main.command()
+@click.option("--verbose", "-v", is_flag=True, help="Show detailed validation results")
+@click.option("--fix", is_flag=True, help="Attempt to fix common template issues")
+def validate_templates(verbose, fix):
+    """Validate all template files for syntax and completeness."""
+    try:
+        click.echo("Validating template files...")
+
+        loader = TemplateLoader()
+        templates = loader.get_available_templates()
+
+        total_templates = 0
+        valid_templates = 0
+        issues_found = []
+
+        # Define required variables for each template type
+        required_vars = {
+            "context_extraction": ["input_text"],
+            "outline_generation": [
+                "genre",
+                "tone",
+                "length",
+                "age_appropriate",
+                "morals",
+                "characters",
+                "locations",
+                "items",
+                "plot_points",
+                "user_inputs",
+            ],
+            "story_generation": [
+                "genre",
+                "tone",
+                "length",
+                "target_word_count",
+                "age_appropriate",
+                "morals",
+                "characters",
+                "locations",
+                "items",
+                "plot_points",
+                "user_inputs",
+                "outline",
+            ],
+        }
+
+        # Validate system prompts
+        click.echo("\n📋 Validating system prompts...")
+        for template_name in templates["system_prompts"]:
+            total_templates += 1
+            try:
+                template_path = f"prompts/system_prompts/{template_name}.txt"
+                content = loader.load_template(template_path)
+
+                # System prompts are typically static, so just check they load successfully
+                if content.strip():
+                    valid_templates += 1
+                    if verbose:
+                        click.echo(f"  ✅ {template_name}.txt - OK")
+                else:
+                    issues_found.append(f"System prompt {template_name}.txt is empty")
+                    if verbose:
+                        click.echo(f"  ❌ {template_name}.txt - Empty file")
+
+            except Exception as e:
+                issues_found.append(f"System prompt {template_name}.txt - {str(e)}")
+                if verbose:
+                    click.echo(f"  ❌ {template_name}.txt - Error: {str(e)}")
+
+        # Validate user prompts
+        click.echo("\n📝 Validating user prompts...")
+        for template_name in templates["user_prompts"]:
+            total_templates += 1
+            try:
+                template_path = f"prompts/user_prompts/{template_name}.txt"
+                content = loader.load_template(template_path)
+
+                # Check for required variables
+                if template_name in required_vars:
+                    validation = loader.validate_template(
+                        template_path, required_vars[template_name]
+                    )
+                    if validation["valid"]:
+                        valid_templates += 1
+                        if verbose:
+                            click.echo(
+                                f"  ✅ {template_name}.txt - All required variables present"
+                            )
+                    else:
+                        missing = ", ".join(validation["missing_vars"])
+                        issues_found.append(
+                            f"User prompt {template_name}.txt missing variables: {missing}"
+                        )
+                        if verbose:
+                            click.echo(f"  ❌ {template_name}.txt - Missing: {missing}")
+                else:
+                    # Just check basic syntax
+                    if "{{" in content and "}}" in content:
+                        valid_templates += 1
+                        if verbose:
+                            click.echo(f"  ✅ {template_name}.txt - OK")
+                    else:
+                        issues_found.append(
+                            f"User prompt {template_name}.txt has no template variables"
+                        )
+                        if verbose:
+                            click.echo(
+                                f"  ⚠️  {template_name}.txt - No template variables"
+                            )
+
+            except Exception as e:
+                issues_found.append(f"User prompt {template_name}.txt - {str(e)}")
+                if verbose:
+                    click.echo(f"  ❌ {template_name}.txt - Error: {str(e)}")
+
+        # Validate include templates
+        click.echo("\n🧩 Validating include templates...")
+        for template_name in templates["includes"]:
+            total_templates += 1
+            try:
+                template_path = f"prompts/includes/{template_name}.txt"
+                content = loader.load_template(template_path)
+
+                # Check for basic template syntax
+                if "{{" in content and "}}" in content:
+                    valid_templates += 1
+                    if verbose:
+                        click.echo(f"  ✅ {template_name}.txt - OK")
+                else:
+                    issues_found.append(
+                        f"Include template {template_name}.txt has no template variables"
+                    )
+                    if verbose:
+                        click.echo(f"  ⚠️  {template_name}.txt - No template variables")
+
+            except Exception as e:
+                issues_found.append(f"Include template {template_name}.txt - {str(e)}")
+                if verbose:
+                    click.echo(f"  ❌ {template_name}.txt - Error: {str(e)}")
+
+        # Summary
+        click.echo(f"\n📊 Validation Summary:")
+        click.echo(f"  Total templates: {total_templates}")
+        click.echo(f"  Valid templates: {valid_templates}")
+        click.echo(f"  Issues found: {len(issues_found)}")
+
+        if issues_found:
+            click.echo(f"\n❌ Issues found:")
+            for issue in issues_found:
+                click.echo(f"  • {issue}")
+
+            if fix:
+                click.echo(f"\n🔧 Fix suggestions:")
+                click.echo(f"  • Check template syntax ({{{{variable}}}})")
+                click.echo(f"  • Ensure all required variables are present")
+                click.echo(f"  • Verify file paths and permissions")
+                click.echo(f"  • Check for typos in variable names")
+
+            raise click.Abort()
+        else:
+            click.echo(f"\n✅ All templates are valid!")
+
+    except Exception as e:
+        click.echo(f"Error validating templates: {str(e)}", err=True)
         raise click.Abort()
 
 

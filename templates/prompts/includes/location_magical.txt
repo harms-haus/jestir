@@ -1,0 +1,7 @@
+**Magical Location: {{name#The location's name}}**
+- Description: {{description#Brief description of the magical location}}
+- Type: Magical or fantastical setting
+- Magical Properties: {{magical_properties#What makes this place magical}}
+- Atmosphere: {{atmosphere#The mood or feeling of the place}}
+- Special Rules: {{special_rules#Any special rules or laws in this place}}
+- Access Requirements: {{access_requirements#What's needed to access this location}}

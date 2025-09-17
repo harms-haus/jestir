@@ -11,6 +11,7 @@ from ..models.entity import Entity
 from ..models.relationship import Relationship
 from ..models.api_config import ExtractionAPIConfig, LightRAGAPIConfig
 from .lightrag_client import LightRAGClient
+from .template_loader import TemplateLoader
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -23,12 +24,14 @@ class ContextGenerator:
         self,
         config: Optional[ExtractionAPIConfig] = None,
         lightrag_config: Optional[LightRAGAPIConfig] = None,
+        template_loader: Optional[TemplateLoader] = None,
     ):
         """Initialize the context generator with OpenAI and LightRAG configuration."""
         self.config = config or self._load_config_from_env()
         self.client = OpenAI(api_key=self.config.api_key, base_url=self.config.base_url)
         self.lightrag_config = lightrag_config or self._load_lightrag_config_from_env()
         self.lightrag_client = LightRAGClient(self.lightrag_config)
+        self.template_loader = template_loader or TemplateLoader()
 
     def _load_config_from_env(self) -> ExtractionAPIConfig:
         """Load configuration from environment variables."""
@@ -117,7 +120,26 @@ class ContextGenerator:
             return self._fallback_extraction(input_text)
 
     def _build_extraction_prompt(self, input_text: str) -> str:
-        """Build the prompt for entity and relationship extraction."""
+        """Build the prompt for entity and relationship extraction using templates."""
+        try:
+            # Load system prompt template
+            system_prompt = self.template_loader.load_system_prompt(
+                "context_extraction"
+            )
+
+            # Load user prompt template and substitute variables
+            user_prompt = self.template_loader.render_template(
+                "prompts/user_prompts/context_extraction.txt",
+                {"input_text": input_text},
+            )
+
+            return user_prompt
+        except Exception as e:
+            logger.warning(f"Failed to load templates, using fallback: {e}")
+            return self._fallback_extraction_prompt(input_text)
+
+    def _fallback_extraction_prompt(self, input_text: str) -> str:
+        """Fallback extraction prompt when templates fail."""
         return f"""
 Analyze the following story input and extract entities and relationships. Return a JSON response with this exact structure:
 

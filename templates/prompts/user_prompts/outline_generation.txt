@@ -1,0 +1,71 @@
+Create a detailed story outline for a {{genre#The story genre (adventure, fantasy, mystery, etc.)}} bedtime story with a {{tone#The emotional tone (gentle, exciting, mysterious, etc.)}} tone.
+
+**Story Requirements:**
+- Genre: {{genre}}
+- Tone: {{tone}}
+- Length: {{length#The desired story length (short, medium, long, etc.)}}
+- Age Appropriate: {{age_appropriate#Whether content is age-appropriate (true/false)}}
+- Morals: {{morals#Comma-separated list of moral lessons to include}}
+
+**Characters:**
+{{characters#Formatted list of character descriptions}}
+
+**Locations:**
+{{locations#Formatted list of location descriptions}}
+
+**Items/Objects:**
+{{items#Formatted list of item/object descriptions}}
+
+**Plot Points:**
+{{plot_points#Formatted list of key plot points}}
+
+**Original Request:**
+{{user_inputs#Formatted list of original user requests}}
+
+**Requirements for the outline:**
+1. Create a clear 3-act structure (Beginning, Middle, End)
+2. Include 4-6 main scenes/events
+3. Ensure age-appropriate content
+4. Include character development and growth
+5. Add a clear moral lesson or positive message
+6. Make it engaging and suitable for bedtime reading
+7. Use markdown formatting with clear headings
+
+**Format the outline as:**
+# Story Outline: [Title]
+
+## Act I: Beginning
+### Scene 1: [Scene Name]
+- [Brief description of what happens]
+- [Character development/conflict introduction]
+
+### Scene 2: [Scene Name]
+- [Brief description of what happens]
+- [Plot development]
+
+## Act II: Middle
+### Scene 3: [Scene Name]
+- [Brief description of what happens]
+- [Rising action/conflict development]
+
+### Scene 4: [Scene Name]
+- [Brief description of what happens]
+- [Character growth/challenges]
+
+### Scene 5: [Scene Name]
+- [Brief description of what happens]
+- [Climax preparation]
+
+## Act III: End
+### Scene 6: [Scene Name]
+- [Brief description of what happens]
+- [Resolution and moral lesson]
+
+## Key Themes
+- [Theme 1]
+- [Theme 2]
+
+## Moral Lesson
+[Clear, age-appropriate moral lesson]
+
+Generate the outline now:

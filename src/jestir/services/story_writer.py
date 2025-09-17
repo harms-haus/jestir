@@ -7,15 +7,21 @@ from typing import Optional, Dict, Any
 from openai import OpenAI
 from ..models.story_context import StoryContext
 from ..models.api_config import CreativeAPIConfig
+from .template_loader import TemplateLoader
 
 
 class StoryWriter:
     """Generates final stories from outlines using OpenAI."""
 
-    def __init__(self, config: Optional[CreativeAPIConfig] = None):
+    def __init__(
+        self,
+        config: Optional[CreativeAPIConfig] = None,
+        template_loader: Optional[TemplateLoader] = None,
+    ):
         """Initialize the story writer with OpenAI configuration."""
         self.config = config or self._load_config_from_env()
         self.client = OpenAI(api_key=self.config.api_key, base_url=self.config.base_url)
+        self.template_loader = template_loader or TemplateLoader()
 
     def _load_config_from_env(self) -> CreativeAPIConfig:
         """Load configuration from environment variables."""
@@ -58,7 +64,99 @@ class StoryWriter:
             return self._fallback_story(context, outline)
 
     def _build_story_prompt(self, context: StoryContext, outline: str) -> str:
-        """Build the prompt for story generation."""
+        """Build the prompt for story generation using templates."""
+        try:
+            # Extract key information from context
+            entities = list(context.entities.values())
+            characters = [e for e in entities if e.type == "character"]
+            locations = [e for e in entities if e.type == "location"]
+            items = [e for e in entities if e.type == "item"]
+
+            # Build character descriptions
+            character_descriptions = []
+            for char in characters:
+                desc = f"- {char.name}: {char.description}"
+                if char.subtype:
+                    desc += f" ({char.subtype})"
+                character_descriptions.append(desc)
+
+            # Build location descriptions
+            location_descriptions = []
+            for loc in locations:
+                desc = f"- {loc.name}: {loc.description}"
+                if loc.subtype:
+                    desc += f" ({loc.subtype})"
+                location_descriptions.append(desc)
+
+            # Build item descriptions
+            item_descriptions = []
+            for item in items:
+                desc = f"- {item.name}: {item.description}"
+                if item.subtype:
+                    desc += f" ({item.subtype})"
+                item_descriptions.append(desc)
+
+            # Get plot points
+            plot_points_text = "\n".join(f"- {point}" for point in context.plot_points)
+
+            # Get user inputs
+            user_inputs_text = "\n".join(
+                f"- {input_id}: {text}"
+                for input_id, text in context.user_inputs.items()
+            )
+
+            # Prepare context for template
+            template_context = {
+                "genre": context.settings.get("genre", "adventure"),
+                "tone": context.settings.get("tone", "gentle"),
+                "length": context.settings.get("length", "short"),
+                "target_word_count": self._get_target_word_count(
+                    context.settings.get("length", "short")
+                ),
+                "age_appropriate": context.settings.get("age_appropriate", True),
+                "morals": (
+                    ", ".join(context.settings.get("morals", []))
+                    if context.settings.get("morals")
+                    else "None specified"
+                ),
+                "characters": (
+                    "\n".join(character_descriptions)
+                    if character_descriptions
+                    else "- No specific characters mentioned"
+                ),
+                "locations": (
+                    "\n".join(location_descriptions)
+                    if location_descriptions
+                    else "- No specific locations mentioned"
+                ),
+                "items": (
+                    "\n".join(item_descriptions)
+                    if item_descriptions
+                    else "- No specific items mentioned"
+                ),
+                "plot_points": (
+                    plot_points_text
+                    if plot_points_text
+                    else "- No specific plot points mentioned"
+                ),
+                "user_inputs": (
+                    user_inputs_text
+                    if user_inputs_text
+                    else "No specific request provided"
+                ),
+                "outline": outline,
+            }
+
+            # Load and render template
+            return self.template_loader.render_template(
+                "prompts/user_prompts/story_generation.txt", template_context
+            )
+        except Exception as e:
+            # Fallback to hardcoded prompt if template loading fails
+            return self._fallback_story_prompt(context, outline)
+
+    def _fallback_story_prompt(self, context: StoryContext, outline: str) -> str:
+        """Fallback story prompt when templates fail."""
         # Extract key information from context
         entities = list(context.entities.values())
         characters = [e for e in entities if e.type == "character"]
@@ -97,7 +195,7 @@ class StoryWriter:
             f"- {input_id}: {text}" for input_id, text in context.user_inputs.items()
         )
 
-        prompt = f"""Write a complete bedtime story based on the provided outline and context.
+        return f"""Write a complete bedtime story based on the provided outline and context.
 
 **Story Requirements:**
 - Genre: {context.settings.get('genre', 'adventure')}
@@ -142,8 +240,6 @@ class StoryWriter:
 [Story content in markdown format with proper paragraphs, dialogue, and narrative flow]
 
 Write the complete story now:"""
-
-        return prompt
 
     def _get_target_word_count(self, length: str) -> int:
         """Get target word count based on length setting."""

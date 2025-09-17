@@ -1,0 +1,45 @@
+Write a complete bedtime story based on the provided outline and context.
+
+**Story Requirements:**
+- Genre: {{genre#The story genre (adventure, fantasy, mystery, etc.)}}
+- Tone: {{tone#The emotional tone (gentle, exciting, mysterious, etc.)}}
+- Length: {{length#The desired story length (short, medium, long, etc.)}} (aim for {{target_word_count#Target number of words for the story}} words)
+- Age Appropriate: {{age_appropriate#Whether content is age-appropriate (true/false)}}
+- Morals: {{morals#Comma-separated list of moral lessons to include}}
+
+**Characters:**
+{{characters#Formatted list of character descriptions}}
+
+**Locations:**
+{{locations#Formatted list of location descriptions}}
+
+**Items/Objects:**
+{{items#Formatted list of item/object descriptions}}
+
+**Plot Points:**
+{{plot_points#Formatted list of key plot points}}
+
+**Original Request:**
+{{user_inputs#Formatted list of original user requests}}
+
+**Story Outline to Follow:**
+{{outline#The complete story outline to follow}}
+
+**Requirements for the story:**
+1. Write in plain markdown format with proper paragraph breaks
+2. Use engaging, age-appropriate language
+3. Include dialogue to bring characters to life
+4. Follow the outline structure but expand each scene into full narrative
+5. Ensure smooth transitions between scenes
+6. Include descriptive details about settings and characters
+7. Build tension and resolution appropriately
+8. End with a clear moral lesson or positive message
+9. Use simple, clear sentences suitable for bedtime reading
+10. Include emotional depth and character growth
+
+**Format the story as:**
+# [Story Title]
+
+[Story content in markdown format with proper paragraphs, dialogue, and narrative flow]
+
+Write the complete story now:

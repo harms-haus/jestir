@@ -1,0 +1,7 @@
+**Exterior Location: {{name#The location's name}}**
+- Description: {{description#Brief description of the location}}
+- Type: Outdoor setting
+- Weather: {{weather#Current weather conditions}}
+- Terrain: {{terrain#Type of ground/landscape}}
+- Atmosphere: {{atmosphere#The mood or feeling of the place}}
+- Natural Features: {{natural_features#Natural elements like trees, rocks, water}}

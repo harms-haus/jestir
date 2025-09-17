@@ -1,0 +1,40 @@
+Analyze the following story input and extract entities and relationships. Return a JSON response with this exact structure:
+
+<structure>
+{
+    "entities": [
+        {
+            "id": "char_001",
+            "type": "character",
+            "subtype": "protagonist",
+            "name": "Character Name",
+            "description": "Brief description",
+            "existing": false,
+            "properties": {}
+        }
+    ],
+    "relationships": [
+        {
+            "type": "visits",
+            "subject": "char_001",
+            "object": "loc_001",
+            "location": null,
+            "metadata": {}
+        }
+    ],
+    "driving_entities": ["char_001", "item_001", "item_004"]
+    "location_progression": ["location_001", "location_003", "location_002"]
+}
+</structure>
+Entity types: character, location, item
+Character subtypes: protagonist, antagonist, supporting, animal
+Location subtypes: interior, exterior, magical, real
+Item subtypes: key-item, tool, treasure
+
+Relationship types: visits, finds, creates, owns, meets, helps, fights, etc.
+
+Driving Entities: characters and items that move the story forward. For characters, usually the protagonist or a main supporting character. For items, it's a key-item or tool that is needed to proceed. It doesn't have to be a literal key.
+
+Story input: "{{input_text#The original story input text from the user}}"
+
+Extract all mentioned characters, locations, items, and their relationships. Mark entities as existing=false for now (LightRAG integration will be added later).

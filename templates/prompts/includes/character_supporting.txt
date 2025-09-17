@@ -1,0 +1,6 @@
+**Supporting Character: {{name#The character's name}}**
+- Description: {{description#Brief description of the character}}
+- Role: Helps or guides the driving character and protagonist
+- Relationship: {{relationship#How this character relates to the protagonist}}
+- Personality: {{personality#The character's personality traits}}
+- Key Contribution: {{contribution#What this character contributes to the story}}

@@ -1,0 +1,5 @@
+**Antagonist Character: {{name#The character's name}}**
+- Description: {{description#Brief description of the character}}
+- Role: Character who opposes the driving character
+- Motivation: {{motivation#What drives this character to oppose others}}
+- Personality: {{personality#The character's personality traits}}

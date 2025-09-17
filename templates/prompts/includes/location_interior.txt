@@ -1,0 +1,7 @@
+**Interior Location: {{name#The location's name}}**
+- Description: {{description#Brief description of the location}}
+- Type: Indoor setting
+- Atmosphere: {{atmosphere#The mood or feeling of the place}}
+- Key Features: {{features#Key physical features of the location}}
+- Mood: {{mood#The emotional mood of the setting}}
+- Accessibility: {{accessibility#How easy it is to access this location}}

@@ -1,0 +1,4 @@
+**Protagonist Character: {{name#The character's name}}**
+- Description: {{description#Brief description of the character}}
+- Role: Main audience stand-in, helps drive the story forward
+- Personality: {{personality#The character's personality traits}}

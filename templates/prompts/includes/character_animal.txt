@@ -1,0 +1,5 @@
+**Animal Character: {{name#The animal's name}}**
+- Description: {{description#Brief description of the animal}}
+- Species: {{species#What type of animal this is}}
+- Personality: {{personality#The animal's personality traits}}
+- Role in Story: {{role#How this animal contributes to the story}}
