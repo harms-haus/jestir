@@ -60,8 +60,47 @@ def context(input_text, output):
         )
         click.echo(f"Plot points: {len(context.plot_points)}")
 
+    except FileNotFoundError as e:
+        click.echo(f"❌ File Error: Cannot access file - {str(e)}", err=True)
+        click.echo(
+            "💡 Tip: Make sure you have write permissions to the output directory",
+            err=True,
+        )
+        raise click.Abort()
+    except PermissionError as e:
+        click.echo(
+            f"❌ Permission Error: Cannot write to output file - {str(e)}", err=True
+        )
+        click.echo(
+            "💡 Tip: Check file permissions or try a different output directory",
+            err=True,
+        )
+        raise click.Abort()
     except Exception as e:
-        click.echo(f"Error generating context: {str(e)}", err=True)
+        error_msg = str(e).lower()
+        if "api" in error_msg or "openai" in error_msg:
+            click.echo(f"❌ API Error: {str(e)}", err=True)
+            click.echo("💡 Troubleshooting:", err=True)
+            click.echo(
+                "   • Check your OPENAI_EXTRACTION_API_KEY environment variable",
+                err=True,
+            )
+            click.echo(
+                "   • Verify your OpenAI account has sufficient credits", err=True
+            )
+            click.echo("   • Check your internet connection", err=True)
+        elif "template" in error_msg:
+            click.echo(f"❌ Template Error: {str(e)}", err=True)
+            click.echo(
+                "💡 Tip: Run 'jestir validate-templates' to check template files",
+                err=True,
+            )
+        else:
+            click.echo(f"❌ Unexpected Error: {str(e)}", err=True)
+            click.echo(
+                "💡 Tip: Try running with a simpler input text or check the logs",
+                err=True,
+            )
         raise click.Abort()
 
 
@@ -108,10 +147,48 @@ def outline(context_file, output):
         click.echo(f"Context file updated: {context_file}")
 
     except FileNotFoundError as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        click.echo(f"❌ File Not Found: {str(e)}", err=True)
+        click.echo("💡 Troubleshooting:", err=True)
+        click.echo(f"   • Make sure the context file '{context_file}' exists", err=True)
+        click.echo(
+            f"   • Generate a context file first: 'jestir context \"your story idea\"'",
+            err=True,
+        )
+        click.echo(f"   • Check the file path is correct", err=True)
+        raise click.Abort()
+    except PermissionError as e:
+        click.echo(
+            f"❌ Permission Error: Cannot write to output file - {str(e)}", err=True
+        )
+        click.echo(
+            "💡 Tip: Check file permissions or try a different output directory",
+            err=True,
+        )
         raise click.Abort()
     except Exception as e:
-        click.echo(f"Error generating outline: {str(e)}", err=True)
+        error_msg = str(e).lower()
+        if "api" in error_msg or "openai" in error_msg:
+            click.echo(f"❌ API Error: {str(e)}", err=True)
+            click.echo("💡 Troubleshooting:", err=True)
+            click.echo(
+                "   • Check your OPENAI_CREATIVE_API_KEY environment variable", err=True
+            )
+            click.echo(
+                "   • Verify your OpenAI account has sufficient credits", err=True
+            )
+            click.echo("   • Check your internet connection", err=True)
+        elif "yaml" in error_msg or "parse" in error_msg:
+            click.echo(
+                f"❌ Context File Error: Invalid YAML format - {str(e)}", err=True
+            )
+            click.echo(
+                f"💡 Tip: Check that '{context_file}' is a valid YAML file", err=True
+            )
+        else:
+            click.echo(f"❌ Unexpected Error: {str(e)}", err=True)
+            click.echo(
+                "💡 Tip: Check that your context file is valid and complete", err=True
+            )
         raise click.Abort()
 
 
@@ -168,10 +245,56 @@ def write(outline_file, output, context):
         click.echo(f"Estimated reading time: {reading_time}")
 
     except FileNotFoundError as e:
-        click.echo(f"Error: {str(e)}", err=True)
+        error_str = str(e)
+        click.echo(f"❌ File Not Found: {error_str}", err=True)
+        click.echo("💡 Troubleshooting:", err=True)
+        if outline_file in error_str:
+            click.echo(
+                f"   • Generate an outline first: 'jestir outline {context}'", err=True
+            )
+            click.echo(
+                f"   • Make sure the outline file '{outline_file}' exists", err=True
+            )
+        elif context in error_str:
+            click.echo(
+                f"   • Generate a context file first: 'jestir context \"your story idea\"'",
+                err=True,
+            )
+            click.echo(f"   • Make sure the context file '{context}' exists", err=True)
+        click.echo(f"   • Check the file paths are correct", err=True)
+        raise click.Abort()
+    except PermissionError as e:
+        click.echo(
+            f"❌ Permission Error: Cannot write to output file - {str(e)}", err=True
+        )
+        click.echo(
+            "💡 Tip: Check file permissions or try a different output directory",
+            err=True,
+        )
         raise click.Abort()
     except Exception as e:
-        click.echo(f"Error generating story: {str(e)}", err=True)
+        error_msg = str(e).lower()
+        if "api" in error_msg or "openai" in error_msg:
+            click.echo(f"❌ API Error: {str(e)}", err=True)
+            click.echo("💡 Troubleshooting:", err=True)
+            click.echo(
+                "   • Check your OPENAI_CREATIVE_API_KEY environment variable", err=True
+            )
+            click.echo(
+                "   • Verify your OpenAI account has sufficient credits", err=True
+            )
+            click.echo("   • Check your internet connection", err=True)
+        elif "yaml" in error_msg or "parse" in error_msg:
+            click.echo(
+                f"❌ File Format Error: Invalid YAML format - {str(e)}", err=True
+            )
+            click.echo(f"💡 Tip: Check that your files are valid YAML format", err=True)
+        else:
+            click.echo(f"❌ Unexpected Error: {str(e)}", err=True)
+            click.echo(
+                "💡 Tip: Check that your outline and context files are valid and complete",
+                err=True,
+            )
         raise click.Abort()
 
 
@@ -337,8 +460,416 @@ def validate_templates(verbose, fix):
         else:
             click.echo(f"\n✅ All templates are valid!")
 
+    except FileNotFoundError as e:
+        click.echo(f"❌ Template Directory Not Found: {str(e)}", err=True)
+        click.echo("💡 Troubleshooting:", err=True)
+        click.echo(
+            "   • Make sure you're running from the project root directory", err=True
+        )
+        click.echo("   • Verify the templates/ directory exists", err=True)
+        click.echo("   • Check that template files are properly installed", err=True)
+        raise click.Abort()
+    except PermissionError as e:
+        click.echo(
+            f"❌ Permission Error: Cannot read template files - {str(e)}", err=True
+        )
+        click.echo(
+            "💡 Tip: Check file permissions in the templates/ directory", err=True
+        )
+        raise click.Abort()
     except Exception as e:
-        click.echo(f"Error validating templates: {str(e)}", err=True)
+        click.echo(f"❌ Template Validation Error: {str(e)}", err=True)
+        click.echo("💡 Troubleshooting:", err=True)
+        click.echo(
+            "   • Check that all template files are properly formatted", err=True
+        )
+        click.echo("   • Verify template syntax uses {{variable}} format", err=True)
+        click.echo("   • Make sure templates/ directory structure is correct", err=True)
+        raise click.Abort()
+
+
+@main.command()
+@click.argument("entity_type", type=click.Choice(["characters", "locations", "items"]))
+@click.option("--query", "-q", help="Search query to filter results")
+@click.option(
+    "--type",
+    "filter_type",
+    help="Filter by specific type (e.g., 'interior' for locations)",
+)
+@click.option("--limit", "-l", default=10, help="Maximum number of results to show")
+@click.option("--page", "-p", default=1, help="Page number for pagination")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["table", "json", "yaml"]),
+    default="table",
+    help="Output format",
+)
+@click.option("--export", "-e", help="Export results to YAML file for context use")
+def search(entity_type, query, filter_type, limit, page, output_format, export):
+    """Search for entities in LightRAG API."""
+    try:
+        # Map entity_type to LightRAG entity type
+        entity_type_map = {
+            "characters": "character",
+            "locations": "location",
+            "items": "item",
+        }
+        lightrag_type = entity_type_map[entity_type]
+
+        # Build search query
+        search_query = query or f"all {entity_type}"
+        if filter_type:
+            search_query = f"{filter_type} {entity_type}: {search_query}"
+
+        click.echo(f"Searching {entity_type} for: '{search_query}'")
+
+        config = LightRAGAPIConfig(
+            base_url=os.getenv("LIGHTRAG_BASE_URL", "http://localhost:8000"),
+            api_key=os.getenv("LIGHTRAG_API_KEY"),
+            timeout=int(os.getenv("LIGHTRAG_TIMEOUT", "30")),
+            mock_mode=os.getenv("LIGHTRAG_MOCK_MODE", "false").lower() == "true",
+        )
+
+        client = LightRAGClient(config)
+
+        # Calculate pagination
+        offset = (page - 1) * limit
+        total_limit = offset + limit
+
+        result = asyncio.run(
+            client.search_entities(search_query, lightrag_type, "mix", total_limit)
+        )
+
+        # Apply pagination to results
+        paginated_entities = result.entities[offset : offset + limit]
+        total_pages = (result.total_count + limit - 1) // limit
+
+        # Prepare output data
+        output_data = {
+            "query": result.query,
+            "entity_type": entity_type,
+            "total_count": result.total_count,
+            "page": page,
+            "total_pages": total_pages,
+            "limit": limit,
+            "entities": [
+                {
+                    "name": e.name,
+                    "type": e.entity_type,
+                    "description": e.description,
+                    "properties": e.properties,
+                }
+                for e in paginated_entities
+            ],
+        }
+
+        if output_format == "json":
+            click.echo(json.dumps(output_data, indent=2))
+        elif output_format == "yaml":
+            click.echo(yaml.dump(output_data, default_flow_style=False))
+        else:  # table format
+            if paginated_entities:
+                page_info = (
+                    f" (page {page} of {total_pages})" if total_pages > 1 else ""
+                )
+                click.echo(f"\nFound {result.total_count} {entity_type}{page_info}:")
+                click.echo("-" * 80)
+                for i, entity in enumerate(paginated_entities, offset + 1):
+                    click.echo(f"{i}. {entity.name} ({entity.entity_type})")
+                    if entity.description:
+                        desc = (
+                            entity.description[:100] + "..."
+                            if len(entity.description) > 100
+                            else entity.description
+                        )
+                        click.echo(f"   Description: {desc}")
+                    if entity.properties:
+                        props = ", ".join(
+                            [f"{k}: {v}" for k, v in entity.properties.items()]
+                        )
+                        click.echo(f"   Properties: {props}")
+                    click.echo()
+
+                # Show pagination info
+                if total_pages > 1:
+                    click.echo(
+                        f"Showing {len(paginated_entities)} of {result.total_count} results"
+                    )
+                    if page < total_pages:
+                        click.echo(f"Use --page {page + 1} to see more results")
+            else:
+                click.echo(f"No {entity_type} found.")
+
+        # Export to YAML if requested
+        if export:
+            with open(export, "w", encoding="utf-8") as f:
+                yaml.dump(output_data, f, default_flow_style=False, allow_unicode=True)
+            click.echo(f"Results exported to: {export}")
+
+    except Exception as e:
+        error_msg = str(e).lower()
+        if (
+            "connection" in error_msg
+            or "timeout" in error_msg
+            or "refused" in error_msg
+        ):
+            click.echo(
+                f"❌ Connection Error: Cannot reach LightRAG API - {str(e)}", err=True
+            )
+            click.echo("💡 Troubleshooting:", err=True)
+            click.echo(f"   • Check LIGHTRAG_BASE_URL: {config.base_url}", err=True)
+            click.echo("   • Verify LightRAG service is running", err=True)
+            click.echo("   • Check your network connection", err=True)
+            click.echo("   • Try using mock mode: LIGHTRAG_MOCK_MODE=true", err=True)
+        elif "unauthorized" in error_msg or "forbidden" in error_msg:
+            click.echo(f"❌ Authentication Error: {str(e)}", err=True)
+            click.echo("💡 Troubleshooting:", err=True)
+            click.echo(
+                "   • Check your LIGHTRAG_API_KEY environment variable", err=True
+            )
+            click.echo("   • Verify the API key is valid and not expired", err=True)
+        elif "invalid" in error_msg and "query" in error_msg:
+            click.echo(f"❌ Query Error: {str(e)}", err=True)
+            click.echo("💡 Tips:", err=True)
+            click.echo(f"   • Try a simpler search query", err=True)
+            click.echo(f"   • Check spelling and try different keywords", err=True)
+            click.echo(
+                f"   • Use 'jestir list {entity_type}' to see all available entities",
+                err=True,
+            )
+        else:
+            click.echo(f"❌ Search Error: {str(e)}", err=True)
+            click.echo("💡 Troubleshooting:", err=True)
+            click.echo(f"   • Try using mock mode: LIGHTRAG_MOCK_MODE=true", err=True)
+            click.echo(f"   • Check LightRAG service status", err=True)
+            click.echo(
+                f"   • Use 'jestir lightrag test' to verify configuration", err=True
+            )
+        raise click.Abort()
+
+
+@main.command(name="list")
+@click.argument("entity_type", type=click.Choice(["characters", "locations", "items"]))
+@click.option(
+    "--type",
+    "filter_type",
+    help="Filter by specific type (e.g., 'interior' for locations)",
+)
+@click.option("--limit", "-l", default=20, help="Maximum number of results to show")
+@click.option("--page", "-p", default=1, help="Page number for pagination")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["table", "json", "yaml"]),
+    default="table",
+    help="Output format",
+)
+@click.option("--export", "-e", help="Export results to YAML file for context use")
+def list_entities(entity_type, filter_type, limit, page, output_format, export):
+    """List entities from LightRAG API with optional filtering."""
+    try:
+        # Map entity_type to LightRAG entity type
+        entity_type_map = {
+            "characters": "character",
+            "locations": "location",
+            "items": "item",
+        }
+        lightrag_type = entity_type_map[entity_type]
+
+        # Build search query
+        search_query = f"all {entity_type}"
+        if filter_type:
+            search_query = f"{filter_type} {entity_type}"
+
+        click.echo(
+            f"Listing {entity_type}"
+            + (f" of type '{filter_type}'" if filter_type else "")
+        )
+
+        config = LightRAGAPIConfig(
+            base_url=os.getenv("LIGHTRAG_BASE_URL", "http://localhost:8000"),
+            api_key=os.getenv("LIGHTRAG_API_KEY"),
+            timeout=int(os.getenv("LIGHTRAG_TIMEOUT", "30")),
+            mock_mode=os.getenv("LIGHTRAG_MOCK_MODE", "false").lower() == "true",
+        )
+
+        client = LightRAGClient(config)
+
+        # Calculate pagination
+        offset = (page - 1) * limit
+        total_limit = offset + limit
+
+        result = asyncio.run(
+            client.search_entities(search_query, lightrag_type, "mix", total_limit)
+        )
+
+        # Apply pagination to results
+        paginated_entities = result.entities[offset : offset + limit]
+        total_pages = (result.total_count + limit - 1) // limit
+
+        # Prepare output data
+        output_data = {
+            "entity_type": entity_type,
+            "filter_type": filter_type,
+            "total_count": result.total_count,
+            "page": page,
+            "total_pages": total_pages,
+            "limit": limit,
+            "entities": [
+                {
+                    "name": e.name,
+                    "type": e.entity_type,
+                    "description": e.description,
+                    "properties": e.properties,
+                }
+                for e in paginated_entities
+            ],
+        }
+
+        if output_format == "json":
+            click.echo(json.dumps(output_data, indent=2))
+        elif output_format == "yaml":
+            click.echo(yaml.dump(output_data, default_flow_style=False))
+        else:  # table format
+            if paginated_entities:
+                filter_text = f" (type: {filter_type})" if filter_type else ""
+                page_info = (
+                    f" (page {page} of {total_pages})" if total_pages > 1 else ""
+                )
+                click.echo(
+                    f"\nFound {result.total_count} {entity_type}{filter_text}{page_info}:"
+                )
+                click.echo("-" * 80)
+                for i, entity in enumerate(paginated_entities, offset + 1):
+                    click.echo(f"{i}. {entity.name} ({entity.entity_type})")
+                    if entity.description:
+                        desc = (
+                            entity.description[:100] + "..."
+                            if len(entity.description) > 100
+                            else entity.description
+                        )
+                        click.echo(f"   Description: {desc}")
+                    if entity.properties:
+                        props = ", ".join(
+                            [f"{k}: {v}" for k, v in entity.properties.items()]
+                        )
+                        click.echo(f"   Properties: {props}")
+                    click.echo()
+
+                # Show pagination info
+                if total_pages > 1:
+                    click.echo(
+                        f"Showing {len(paginated_entities)} of {result.total_count} results"
+                    )
+                    if page < total_pages:
+                        click.echo(f"Use --page {page + 1} to see more results")
+            else:
+                filter_text = f" of type '{filter_type}'" if filter_type else ""
+                click.echo(f"No {entity_type}{filter_text} found.")
+
+        # Export to YAML if requested
+        if export:
+            with open(export, "w", encoding="utf-8") as f:
+                yaml.dump(output_data, f, default_flow_style=False, allow_unicode=True)
+            click.echo(f"Results exported to: {export}")
+
+    except Exception as e:
+        error_msg = str(e).lower()
+        if (
+            "connection" in error_msg
+            or "timeout" in error_msg
+            or "refused" in error_msg
+        ):
+            click.echo(
+                f"❌ Connection Error: Cannot reach LightRAG API - {str(e)}", err=True
+            )
+            click.echo("💡 Troubleshooting:", err=True)
+            click.echo(f"   • Check LIGHTRAG_BASE_URL: {config.base_url}", err=True)
+            click.echo("   • Verify LightRAG service is running", err=True)
+            click.echo("   • Check your network connection", err=True)
+            click.echo("   • Try using mock mode: LIGHTRAG_MOCK_MODE=true", err=True)
+        elif "unauthorized" in error_msg or "forbidden" in error_msg:
+            click.echo(f"❌ Authentication Error: {str(e)}", err=True)
+            click.echo("💡 Troubleshooting:", err=True)
+            click.echo(
+                "   • Check your LIGHTRAG_API_KEY environment variable", err=True
+            )
+            click.echo("   • Verify the API key is valid and not expired", err=True)
+        else:
+            click.echo(f"❌ List Error: {str(e)}", err=True)
+            click.echo("💡 Troubleshooting:", err=True)
+            click.echo(f"   • Try using mock mode: LIGHTRAG_MOCK_MODE=true", err=True)
+            click.echo(
+                f"   • Use 'jestir lightrag test' to verify configuration", err=True
+            )
+        raise click.Abort()
+
+
+@main.command()
+@click.argument("entity_name")
+@click.option("--type", "entity_type", help="Entity type (character, location, item)")
+def show(entity_name, entity_type):
+    """Show detailed information about a specific entity."""
+    try:
+        click.echo(f"Getting details for entity: '{entity_name}'")
+
+        config = LightRAGAPIConfig(
+            base_url=os.getenv("LIGHTRAG_BASE_URL", "http://localhost:8000"),
+            api_key=os.getenv("LIGHTRAG_API_KEY"),
+            timeout=int(os.getenv("LIGHTRAG_TIMEOUT", "30")),
+            mock_mode=os.getenv("LIGHTRAG_MOCK_MODE", "false").lower() == "true",
+        )
+
+        client = LightRAGClient(config)
+        entity = asyncio.run(client.get_entity_details(entity_name))
+
+        if entity:
+            click.echo(f"\nEntity Details:")
+            click.echo(f"Name: {entity.name}")
+            click.echo(f"Type: {entity.entity_type}")
+            if entity.description:
+                click.echo(f"Description: {entity.description}")
+            if entity.properties:
+                click.echo(f"Properties:")
+                for key, value in entity.properties.items():
+                    click.echo(f"  {key}: {value}")
+            if entity.relationships:
+                click.echo(f"Relationships: {', '.join(entity.relationships)}")
+        else:
+            click.echo(f"Entity '{entity_name}' not found.")
+
+    except Exception as e:
+        error_msg = str(e).lower()
+        if (
+            "connection" in error_msg
+            or "timeout" in error_msg
+            or "refused" in error_msg
+        ):
+            click.echo(
+                f"❌ Connection Error: Cannot reach LightRAG API - {str(e)}", err=True
+            )
+            click.echo("💡 Troubleshooting:", err=True)
+            click.echo(f"   • Check LIGHTRAG_BASE_URL: {config.base_url}", err=True)
+            click.echo("   • Verify LightRAG service is running", err=True)
+            click.echo("   • Check your network connection", err=True)
+            click.echo("   • Try using mock mode: LIGHTRAG_MOCK_MODE=true", err=True)
+        elif "unauthorized" in error_msg or "forbidden" in error_msg:
+            click.echo(f"❌ Authentication Error: {str(e)}", err=True)
+            click.echo("💡 Troubleshooting:", err=True)
+            click.echo(
+                "   • Check your LIGHTRAG_API_KEY environment variable", err=True
+            )
+            click.echo("   • Verify the API key is valid and not expired", err=True)
+        else:
+            click.echo(f"❌ Entity Details Error: {str(e)}", err=True)
+            click.echo("💡 Troubleshooting:", err=True)
+            click.echo(f"   • Check that entity '{entity_name}' exists", err=True)
+            click.echo(
+                f"   • Try searching first: 'jestir search characters --query \"{entity_name}\"'",
+                err=True,
+            )
+            click.echo(f"   • Try using mock mode: LIGHTRAG_MOCK_MODE=true", err=True)
         raise click.Abort()
 
 
@@ -388,136 +919,46 @@ def test(base_url, api_key, timeout):
         click.echo("\n✅ LightRAG API test completed successfully!")
 
     except Exception as e:
-        click.echo(f"❌ LightRAG API test failed: {str(e)}", err=True)
-        raise click.Abort()
-
-
-@lightrag.command()
-@click.argument("query")
-@click.option(
-    "--type", "entity_type", help="Filter by entity type (character, location, item)"
-)
-@click.option(
-    "--mode",
-    default="mix",
-    help="Query mode (local, global, hybrid, naive, mix, bypass)",
-)
-@click.option("--limit", "top_k", default=10, help="Maximum number of results")
-@click.option(
-    "--format",
-    "output_format",
-    type=click.Choice(["table", "json", "yaml"]),
-    default="table",
-    help="Output format",
-)
-def search(query, entity_type, mode, top_k, output_format):
-    """Search for entities in LightRAG API."""
-    try:
-        click.echo(f"Searching LightRAG for: '{query}'")
-
-        config = LightRAGAPIConfig(
-            base_url=os.getenv("LIGHTRAG_BASE_URL", "http://localhost:8000"),
-            api_key=os.getenv("LIGHTRAG_API_KEY"),
-            timeout=int(os.getenv("LIGHTRAG_TIMEOUT", "30")),
-            mock_mode=os.getenv("LIGHTRAG_MOCK_MODE", "false").lower() == "true",
-        )
-
-        client = LightRAGClient(config)
-        result = asyncio.run(client.search_entities(query, entity_type, mode, top_k))
-
-        if output_format == "json":
-            output_data = {
-                "query": result.query,
-                "mode": result.mode,
-                "total_count": result.total_count,
-                "entities": [
-                    {
-                        "name": e.name,
-                        "type": e.entity_type,
-                        "description": e.description,
-                        "properties": e.properties,
-                    }
-                    for e in result.entities
-                ],
-            }
-            click.echo(json.dumps(output_data, indent=2))
-        elif output_format == "yaml":
-            output_data = {
-                "query": result.query,
-                "mode": result.mode,
-                "total_count": result.total_count,
-                "entities": [
-                    {
-                        "name": e.name,
-                        "type": e.entity_type,
-                        "description": e.description,
-                        "properties": e.properties,
-                    }
-                    for e in result.entities
-                ],
-            }
-            click.echo(yaml.dump(output_data, default_flow_style=False))
-        else:  # table format
-            if result.entities:
-                click.echo(f"\nFound {result.total_count} entities:")
-                click.echo("-" * 80)
-                for i, entity in enumerate(result.entities, 1):
-                    click.echo(f"{i}. {entity.name} ({entity.entity_type})")
-                    if entity.description:
-                        desc = (
-                            entity.description[:100] + "..."
-                            if len(entity.description) > 100
-                            else entity.description
-                        )
-                        click.echo(f"   Description: {desc}")
-                    if entity.properties:
-                        props = ", ".join(
-                            [f"{k}: {v}" for k, v in entity.properties.items()]
-                        )
-                        click.echo(f"   Properties: {props}")
-                    click.echo()
-            else:
-                click.echo("No entities found.")
-
-    except Exception as e:
-        click.echo(f"Error searching LightRAG: {str(e)}", err=True)
-        raise click.Abort()
-
-
-@lightrag.command()
-@click.argument("entity_name")
-def show(entity_name):
-    """Show detailed information about a specific entity."""
-    try:
-        click.echo(f"Getting details for entity: '{entity_name}'")
-
-        config = LightRAGAPIConfig(
-            base_url=os.getenv("LIGHTRAG_BASE_URL", "http://localhost:8000"),
-            api_key=os.getenv("LIGHTRAG_API_KEY"),
-            timeout=int(os.getenv("LIGHTRAG_TIMEOUT", "30")),
-            mock_mode=os.getenv("LIGHTRAG_MOCK_MODE", "false").lower() == "true",
-        )
-
-        client = LightRAGClient(config)
-        entity = asyncio.run(client.get_entity_details(entity_name))
-
-        if entity:
-            click.echo(f"\nEntity Details:")
-            click.echo(f"Name: {entity.name}")
-            click.echo(f"Type: {entity.entity_type}")
-            if entity.description:
-                click.echo(f"Description: {entity.description}")
-            if entity.properties:
-                click.echo(f"Properties:")
-                for key, value in entity.properties.items():
-                    click.echo(f"  {key}: {value}")
-            if entity.relationships:
-                click.echo(f"Relationships: {', '.join(entity.relationships)}")
+        error_msg = str(e).lower()
+        if (
+            "connection" in error_msg
+            or "timeout" in error_msg
+            or "refused" in error_msg
+        ):
+            click.echo(f"❌ Connection Failed: Cannot reach LightRAG API", err=True)
+            click.echo("💡 Troubleshooting:", err=True)
+            click.echo(f"   • Check LIGHTRAG_BASE_URL: {config.base_url}", err=True)
+            click.echo("   • Verify LightRAG service is running", err=True)
+            click.echo("   • Check your network connection", err=True)
+            click.echo("   • Try: docker ps | grep lightrag", err=True)
+        elif (
+            "unauthorized" in error_msg
+            or "forbidden" in error_msg
+            or "401" in error_msg
+        ):
+            click.echo(f"❌ Authentication Failed: Invalid API credentials", err=True)
+            click.echo("💡 Troubleshooting:", err=True)
+            click.echo(
+                "   • Check your LIGHTRAG_API_KEY environment variable", err=True
+            )
+            click.echo("   • Verify the API key is valid and not expired", err=True)
+            click.echo("   • Contact your LightRAG administrator", err=True)
+        elif "404" in error_msg or "not found" in error_msg:
+            click.echo(
+                f"❌ Service Not Found: LightRAG API endpoints not available", err=True
+            )
+            click.echo("💡 Troubleshooting:", err=True)
+            click.echo(
+                f"   • Verify LIGHTRAG_BASE_URL is correct: {config.base_url}", err=True
+            )
+            click.echo("   • Check LightRAG service version compatibility", err=True)
+            click.echo("   • Ensure all required API endpoints are available", err=True)
         else:
-            click.echo(f"Entity '{entity_name}' not found.")
-
-    except Exception as e:
-        click.echo(f"Error getting entity details: {str(e)}", err=True)
+            click.echo(f"❌ LightRAG API test failed: {str(e)}", err=True)
+            click.echo("💡 Troubleshooting:", err=True)
+            click.echo("   • Check LightRAG service logs", err=True)
+            click.echo("   • Verify service configuration", err=True)
+            click.echo("   • Try using mock mode: LIGHTRAG_MOCK_MODE=true", err=True)
         raise click.Abort()
 
 

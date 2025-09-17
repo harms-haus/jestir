@@ -2,10 +2,13 @@
 
 import json
 import asyncio
+import logging
 from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
 import httpx
 from ..models.api_config import LightRAGAPIConfig
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -96,8 +99,17 @@ class LightRAGClient:
                 result = response.json()
                 return self._parse_search_response(result, query, mode)
 
+        except httpx.ConnectError as e:
+            logger.warning(f"LightRAG connection failed: {e}")
+            return self._mock_search_entities(query, entity_type, mode, top_k)
+        except httpx.TimeoutException as e:
+            logger.warning(f"LightRAG request timeout: {e}")
+            return self._mock_search_entities(query, entity_type, mode, top_k)
+        except httpx.HTTPStatusError as e:
+            logger.warning(f"LightRAG HTTP error {e.response.status_code}: {e}")
+            return self._mock_search_entities(query, entity_type, mode, top_k)
         except Exception as e:
-            # Fallback to mock mode on error
+            logger.warning(f"Unexpected LightRAG error: {e}")
             return self._mock_search_entities(query, entity_type, mode, top_k)
 
     async def get_entity_details(self, entity_name: str) -> Optional[LightRAGEntity]:
@@ -143,8 +155,17 @@ class LightRAGClient:
                 result = response.json()
                 return self._parse_entity_details(result, entity_name)
 
+        except httpx.ConnectError as e:
+            logger.warning(f"LightRAG connection failed: {e}")
+            return self._mock_get_entity_details(entity_name)
+        except httpx.TimeoutException as e:
+            logger.warning(f"LightRAG request timeout: {e}")
+            return self._mock_get_entity_details(entity_name)
+        except httpx.HTTPStatusError as e:
+            logger.warning(f"LightRAG HTTP error {e.response.status_code}: {e}")
+            return self._mock_get_entity_details(entity_name)
         except Exception as e:
-            # Fallback to mock mode on error
+            logger.warning(f"Unexpected LightRAG error: {e}")
             return self._mock_get_entity_details(entity_name)
 
     async def get_available_entity_types(self) -> List[str]:
@@ -166,8 +187,17 @@ class LightRAGClient:
                 response.raise_for_status()
                 return response.json()
 
+        except httpx.ConnectError as e:
+            logger.warning(f"LightRAG connection failed: {e}")
+            return self._mock_get_entity_types()
+        except httpx.TimeoutException as e:
+            logger.warning(f"LightRAG request timeout: {e}")
+            return self._mock_get_entity_types()
+        except httpx.HTTPStatusError as e:
+            logger.warning(f"LightRAG HTTP error {e.response.status_code}: {e}")
+            return self._mock_get_entity_types()
         except Exception as e:
-            # Fallback to mock mode on error
+            logger.warning(f"Unexpected LightRAG error: {e}")
             return self._mock_get_entity_types()
 
     async def fuzzy_search_entities(

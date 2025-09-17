@@ -26,20 +26,37 @@ class TemplateLoader:
         template_file = self.templates_dir / template_path
 
         if not template_file.exists():
-            raise FileNotFoundError(f"Template file not found: {template_file}")
+            available_templates = self._get_available_template_list()
+            raise FileNotFoundError(
+                f"Template file not found: {template_path}\n"
+                f"Expected location: {template_file}\n"
+                f"Available templates: {available_templates}"
+            )
 
         # Check cache first
         cache_key = str(template_file)
         if cache_key in self._template_cache:
             return self._template_cache[cache_key]
 
-        # Load template
-        with open(template_file, "r", encoding="utf-8") as f:
-            content = f.read()
+        try:
+            # Load template
+            with open(template_file, "r", encoding="utf-8") as f:
+                content = f.read()
 
-        # Cache the template
-        self._template_cache[cache_key] = content
-        return content
+            # Cache the template
+            self._template_cache[cache_key] = content
+            return content
+
+        except PermissionError:
+            raise PermissionError(
+                f"Cannot read template file: {template_path}\n"
+                f"Check file permissions for: {template_file}"
+            )
+        except UnicodeDecodeError as e:
+            raise ValueError(
+                f"Invalid file encoding in template: {template_path}\n"
+                f"Template files must be UTF-8 encoded. Error: {e}"
+            )
 
     def render_template(self, template_path: str, context: Dict[str, Any]) -> str:
         """Render a template with variable substitution."""
@@ -133,3 +150,20 @@ class TemplateLoader:
             "extra_vars": list(extra_vars),
             "found_vars": list(found_vars),
         }
+
+    def _get_available_template_list(self) -> str:
+        """Get a formatted list of available templates for error messages."""
+        try:
+            templates = self.get_available_templates()
+            template_list = []
+
+            for category, template_names in templates.items():
+                for name in template_names:
+                    template_list.append(f"{category}/{name}.txt")
+
+            if template_list:
+                return ", ".join(sorted(template_list))
+            else:
+                return "No templates found"
+        except Exception:
+            return "Unable to list templates"

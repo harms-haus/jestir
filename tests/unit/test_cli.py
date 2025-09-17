@@ -108,3 +108,147 @@ class TestCLI:
 
             assert result.exit_code == 0
             assert "Warning" not in result.output  # No warning about missing API key
+
+    def test_search_command_help(self):
+        """Test search command help."""
+        result = self.runner.invoke(main, ["search", "--help"])
+        assert result.exit_code == 0
+        assert "Search for entities in LightRAG API" in result.output
+
+    def test_search_command_characters(self):
+        """Test search command for characters."""
+        with patch.dict("os.environ", {"LIGHTRAG_MOCK_MODE": "true"}):
+            result = self.runner.invoke(
+                main, ["search", "characters", "--query", "dragon"]
+            )
+            assert result.exit_code == 0
+            assert "Searching characters for: 'dragon'" in result.output
+            assert "Purple Dragon" in result.output
+
+    def test_search_command_locations(self):
+        """Test search command for locations."""
+        with patch.dict("os.environ", {"LIGHTRAG_MOCK_MODE": "true"}):
+            result = self.runner.invoke(
+                main, ["search", "locations", "--query", "forest"]
+            )
+            assert result.exit_code == 0
+            assert "Searching locations for: 'forest'" in result.output
+            assert "Magic Forest" in result.output
+
+    def test_search_command_with_pagination(self):
+        """Test search command with pagination."""
+        with patch.dict("os.environ", {"LIGHTRAG_MOCK_MODE": "true"}):
+            result = self.runner.invoke(
+                main,
+                [
+                    "search",
+                    "characters",
+                    "--query",
+                    "dragon",
+                    "--page",
+                    "1",
+                    "--limit",
+                    "5",
+                ],
+            )
+            assert result.exit_code == 0
+            assert "page 1 of" in result.output or "Found" in result.output
+
+    def test_search_command_export_yaml(self):
+        """Test search command with YAML export."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            export_file = os.path.join(temp_dir, "export.yaml")
+            with patch.dict("os.environ", {"LIGHTRAG_MOCK_MODE": "true"}):
+                result = self.runner.invoke(
+                    main,
+                    [
+                        "search",
+                        "characters",
+                        "--query",
+                        "dragon",
+                        "--export",
+                        export_file,
+                    ],
+                )
+                assert result.exit_code == 0
+                assert os.path.exists(export_file)
+
+                # Check that the exported file contains YAML content
+                with open(export_file, "r") as f:
+                    content = f.read()
+                    assert "entities:" in content
+                    assert "Purple Dragon" in content
+
+    def test_list_command_help(self):
+        """Test list command help."""
+        result = self.runner.invoke(main, ["list", "--help"])
+        assert result.exit_code == 0
+        assert "List entities from LightRAG API" in result.output
+
+    def test_list_command_locations(self):
+        """Test list command for locations."""
+        with patch.dict("os.environ", {"LIGHTRAG_MOCK_MODE": "true"}):
+            result = self.runner.invoke(main, ["list", "locations"])
+            assert result.exit_code == 0
+            assert "Listing locations" in result.output
+            assert "Magic Forest" in result.output
+
+    def test_list_command_with_type_filter(self):
+        """Test list command with type filtering."""
+        with patch.dict("os.environ", {"LIGHTRAG_MOCK_MODE": "true"}):
+            result = self.runner.invoke(
+                main, ["list", "locations", "--type", "interior"]
+            )
+            assert result.exit_code == 0
+            assert "type 'interior'" in result.output
+
+    def test_show_command_help(self):
+        """Test show command help."""
+        result = self.runner.invoke(main, ["show", "--help"])
+        assert result.exit_code == 0
+        assert "Show detailed information about a specific entity" in result.output
+
+    def test_show_command_character(self):
+        """Test show command for a character."""
+        with patch.dict("os.environ", {"LIGHTRAG_MOCK_MODE": "true"}):
+            result = self.runner.invoke(main, ["show", "Lily"])
+            assert result.exit_code == 0
+            assert "Getting details for entity: 'Lily'" in result.output
+            assert "Name: Lily" in result.output
+            assert "character" in result.output
+
+    def test_show_command_not_found(self):
+        """Test show command for non-existent entity."""
+        with patch.dict("os.environ", {"LIGHTRAG_MOCK_MODE": "true"}):
+            result = self.runner.invoke(main, ["show", "nonexistent"])
+            assert result.exit_code == 0
+            assert "Entity 'nonexistent' not found" in result.output
+
+    def test_search_command_json_format(self):
+        """Test search command with JSON output format."""
+        with patch.dict("os.environ", {"LIGHTRAG_MOCK_MODE": "true"}):
+            result = self.runner.invoke(
+                main, ["search", "characters", "--query", "dragon", "--format", "json"]
+            )
+            assert result.exit_code == 0
+            # Should be valid JSON (skip the "Searching..." message)
+            import json
+
+            lines = result.output.strip().split("\n")
+            json_start = next(
+                i for i, line in enumerate(lines) if line.strip().startswith("{")
+            )
+            json_output = "\n".join(lines[json_start:])
+            json.loads(json_output)
+
+    def test_search_command_yaml_format(self):
+        """Test search command with YAML output format."""
+        with patch.dict("os.environ", {"LIGHTRAG_MOCK_MODE": "true"}):
+            result = self.runner.invoke(
+                main, ["search", "characters", "--query", "dragon", "--format", "yaml"]
+            )
+            assert result.exit_code == 0
+            # Should be valid YAML
+            import yaml
+
+            yaml.safe_load(result.output)
