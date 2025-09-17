@@ -11,6 +11,8 @@
 - **Library:** Python logging module
 - **Format:** `%(timestamp)s - %(name)s - %(level)s - %(message)s`
 - **Levels:** DEBUG (verbose), INFO (standard), WARNING (issues), ERROR (failures)
+- **Console Logging:** Controlled by `--verbose` CLI flag (debug level output)
+- **Disk Logging:** Controlled by `JESTIR_LOG_TO_DISK` environment variable (off by default)
 - **Required Context:**
   - Correlation ID: Story generation session ID
   - Service Context: Component name

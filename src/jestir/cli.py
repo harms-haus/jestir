@@ -17,25 +17,49 @@ from .services.lightrag_client import LightRAGClient
 from .services.outline_generator import OutlineGenerator
 from .services.story_writer import StoryWriter
 from .services.template_loader import TemplateLoader
+from .utils.logging_config import (
+    get_logger,
+    log_command_end,
+    log_command_start,
+    setup_logging,
+)
 
 
 @click.group()
+@click.option(
+    "--verbose",
+    "-v",
+    is_flag=True,
+    help="Enable verbose debug logging to console",
+)
 @click.version_option()
-def main():
+@click.pass_context
+def main(ctx, verbose):
     """Jestir: AI-powered bedtime story generator with 3-stage pipeline."""
+    # Set up logging configuration
+    setup_logging(verbose=verbose)
+
+    # Store verbose flag in context for use by subcommands
+    ctx.ensure_object(dict)
+    ctx.obj["verbose"] = verbose
 
 
 @main.command()
 @click.argument("input_text")
 @click.option("--output", "-o", default="context.yaml", help="Output context file")
-def context(input_text, output):
+@click.pass_context
+def context(ctx, input_text, output):
     """Update existing context or create new one from natural language input."""
+    logger = get_logger("cli.context")
+    log_command_start("context", {"input_text": input_text, "output": output}, logger)
+
     try:
         # Check if default context file exists
         default_context_file = "context.yaml"
         existing_context = None
 
         if os.path.exists(default_context_file):
+            logger.debug(f"Found existing context file: {default_context_file}")
             click.echo(f"Found existing context file: {default_context_file}")
             try:
                 # Load existing context
@@ -43,28 +67,37 @@ def context(input_text, output):
                 existing_context = generator.load_context_from_file(
                     default_context_file,
                 )
+                logger.debug("Successfully loaded existing context")
                 click.echo("Loading existing context for updates...")
             except Exception as e:
+                logger.warning(f"Could not load existing context: {e}")
                 click.echo(f"Warning: Could not load existing context: {e}")
                 click.echo("Creating new context instead...")
                 existing_context = None
         else:
+            logger.debug("No existing context file found")
             click.echo("No existing context found, creating new one...")
 
         # Generate or update context
         generator = ContextGenerator()
         if existing_context:
+            logger.debug(f"Updating context with input: {input_text}")
             click.echo(f"Updating context with: {input_text}")
             updated_context = generator.update_context(input_text, existing_context)
         else:
+            logger.debug(f"Generating new context from input: {input_text}")
             click.echo(f"Generating new context from: {input_text}")
             updated_context = generator.generate_context(input_text)
 
         # Convert to dict for YAML serialization
         context_dict = updated_context.model_dump()
+        logger.debug(
+            f"Context serialized to dict with {len(context_dict)} top-level keys",
+        )
 
         # Write to file
         output_path = Path(output)
+        logger.debug(f"Writing context to file: {output_path}")
         with open(output_path, "w", encoding="utf-8") as f:
             yaml.dump(
                 context_dict,
@@ -75,20 +108,26 @@ def context(input_text, output):
             )
 
         action = "Updated" if existing_context else "Generated"
+        logger.info(f"Context {action.lower()} successfully: {output}")
         click.echo(f"Context {action.lower()} successfully: {output}")
         click.echo(
             f"Found {len(updated_context.entities)} entities and {len(updated_context.relationships)} relationships",
         )
         click.echo(f"Plot points: {len(updated_context.plot_points)}")
 
+        log_command_end("context", success=True, logger=logger)
+
     except FileNotFoundError as e:
+        logger.error(f"File not found error: {e}")
         click.echo(f"❌ File Error: Cannot access file - {e!s}", err=True)
         click.echo(
             "💡 Tip: Make sure you have write permissions to the output directory",
             err=True,
         )
+        log_command_end("context", success=False, logger=logger)
         raise click.Abort()
     except PermissionError as e:
+        logger.error(f"Permission error: {e}")
         click.echo(
             f"❌ Permission Error: Cannot write to output file - {e!s}",
             err=True,
@@ -97,8 +136,10 @@ def context(input_text, output):
             "💡 Tip: Check file permissions or try a different output directory",
             err=True,
         )
+        log_command_end("context", success=False, logger=logger)
         raise click.Abort()
     except Exception as e:
+        logger.exception("Unexpected error in context command")
         error_msg = str(e).lower()
         if "api" in error_msg or "openai" in error_msg:
             click.echo(f"❌ API Error: {e!s}", err=True)
@@ -124,19 +165,32 @@ def context(input_text, output):
                 "💡 Tip: Try running with a simpler input text or check the logs",
                 err=True,
             )
+        log_command_end("context", success=False, logger=logger)
         raise click.Abort()
 
 
 @main.command()
 @click.argument("input_text")
 @click.option("--output", "-o", default="context.yaml", help="Output context file")
-def context_new(input_text, output):
+@click.pass_context
+def context_new(ctx, input_text, output):
     """Generate a new context from natural language input."""
+    logger = get_logger("cli.context_new")
+    log_command_start(
+        "context_new",
+        {"input_text": input_text, "output": output},
+        logger,
+    )
+
     try:
+        logger.debug(f"Generating new context from: {input_text}")
         click.echo(f"Generating context from: {input_text}")
 
         # Check for OpenAI API key
         if not os.getenv("OPENAI_EXTRACTION_API_KEY"):
+            logger.warning(
+                "OPENAI_EXTRACTION_API_KEY not set, using fallback extraction",
+            )
             click.echo(
                 "Warning: OPENAI_EXTRACTION_API_KEY not set. Using fallback extraction.",
                 err=True,
@@ -144,13 +198,19 @@ def context_new(input_text, output):
 
         # Generate context
         generator = ContextGenerator()
+        logger.debug("Starting context generation")
         context = generator.generate_context(input_text)
+        logger.debug("Context generation completed")
 
         # Convert to dict for YAML serialization
         context_dict = context.model_dump()
+        logger.debug(
+            f"Context serialized to dict with {len(context_dict)} top-level keys",
+        )
 
         # Write to file
         output_path = Path(output)
+        logger.debug(f"Writing context to file: {output_path}")
         with open(output_path, "w", encoding="utf-8") as f:
             yaml.dump(
                 context_dict,
@@ -160,20 +220,26 @@ def context_new(input_text, output):
                 sort_keys=False,
             )
 
+        logger.info(f"Context generated successfully: {output}")
         click.echo(f"Context generated successfully: {output}")
         click.echo(
             f"Found {len(context.entities)} entities and {len(context.relationships)} relationships",
         )
         click.echo(f"Plot points: {len(context.plot_points)}")
 
+        log_command_end("context_new", success=True, logger=logger)
+
     except FileNotFoundError as e:
+        logger.error(f"File not found error: {e}")
         click.echo(f"❌ File Error: Cannot access file - {e!s}", err=True)
         click.echo(
             "💡 Tip: Make sure you have write permissions to the output directory",
             err=True,
         )
+        log_command_end("context_new", success=False, logger=logger)
         raise click.Abort()
     except PermissionError as e:
+        logger.error(f"Permission error: {e}")
         click.echo(
             f"❌ Permission Error: Cannot write to output file - {e!s}",
             err=True,
@@ -182,8 +248,10 @@ def context_new(input_text, output):
             "💡 Tip: Check file permissions or try a different output directory",
             err=True,
         )
+        log_command_end("context_new", success=False, logger=logger)
         raise click.Abort()
     except Exception as e:
+        logger.exception("Unexpected error in context_new command")
         error_msg = str(e).lower()
         if "api" in error_msg or "openai" in error_msg:
             click.echo(f"❌ API Error: {e!s}", err=True)
@@ -209,19 +277,32 @@ def context_new(input_text, output):
                 "💡 Tip: Try running with a simpler input text or check the logs",
                 err=True,
             )
+        log_command_end("context_new", success=False, logger=logger)
         raise click.Abort()
 
 
 @main.command()
 @click.argument("context_file")
 @click.option("--output", "-o", default="outline.md", help="Output outline file")
-def outline(context_file, output):
+@click.pass_context
+def outline(ctx, context_file, output):
     """Generate story outline from context file."""
+    logger = get_logger("cli.outline")
+    log_command_start(
+        "outline",
+        {"context_file": context_file, "output": output},
+        logger,
+    )
+
     try:
+        logger.debug(f"Generating outline from: {context_file}")
         click.echo(f"Generating outline from: {context_file}")
 
         # Check for OpenAI API key
         if not os.getenv("OPENAI_CREATIVE_API_KEY"):
+            logger.warning(
+                "OPENAI_CREATIVE_API_KEY not set, using fallback outline generation",
+            )
             click.echo(
                 "Warning: OPENAI_CREATIVE_API_KEY not set. Using fallback outline generation.",
                 err=True,
@@ -229,19 +310,26 @@ def outline(context_file, output):
 
         # Load context from file
         generator = OutlineGenerator()
+        logger.debug(f"Loading context from file: {context_file}")
         context = generator.load_context_from_file(context_file)
+        logger.debug("Context loaded successfully")
 
         # Generate outline
+        logger.debug("Starting outline generation")
         outline_content = generator.generate_outline(context)
+        logger.debug("Outline generation completed")
 
         # Save outline to file
+        logger.debug(f"Saving outline to file: {output}")
         generator.save_outline_to_file(outline_content, output)
 
         # Update context with outline and save back
+        logger.debug("Updating context with outline")
         generator.update_context_with_outline(context, outline_content)
 
         # Save updated context back to file
         context_dict = context.model_dump()
+        logger.debug(f"Saving updated context to file: {context_file}")
         with open(context_file, "w", encoding="utf-8") as f:
             yaml.dump(
                 context_dict,
@@ -251,10 +339,14 @@ def outline(context_file, output):
                 sort_keys=False,
             )
 
+        logger.info(f"Outline generated successfully: {output}")
         click.echo(f"Outline generated successfully: {output}")
         click.echo(f"Context file updated: {context_file}")
 
+        log_command_end("outline", success=True, logger=logger)
+
     except FileNotFoundError as e:
+        logger.error(f"File not found error: {e}")
         click.echo(f"❌ File Not Found: {e!s}", err=True)
         click.echo("💡 Troubleshooting:", err=True)
         click.echo(f"   • Make sure the context file '{context_file}' exists", err=True)
@@ -263,8 +355,10 @@ def outline(context_file, output):
             err=True,
         )
         click.echo("   • Check the file path is correct", err=True)
+        log_command_end("outline", success=False, logger=logger)
         raise click.Abort()
     except PermissionError as e:
+        logger.error(f"Permission error: {e}")
         click.echo(
             f"❌ Permission Error: Cannot write to output file - {e!s}",
             err=True,
@@ -273,8 +367,10 @@ def outline(context_file, output):
             "💡 Tip: Check file permissions or try a different output directory",
             err=True,
         )
+        log_command_end("outline", success=False, logger=logger)
         raise click.Abort()
     except Exception as e:
+        logger.exception("Unexpected error in outline command")
         error_msg = str(e).lower()
         if "api" in error_msg or "openai" in error_msg:
             click.echo(f"❌ API Error: {e!s}", err=True)
@@ -303,6 +399,7 @@ def outline(context_file, output):
                 "💡 Tip: Check that your context file is valid and complete",
                 err=True,
             )
+        log_command_end("outline", success=False, logger=logger)
         raise click.Abort()
 
 
@@ -315,13 +412,25 @@ def outline(context_file, output):
     default="context.yaml",
     help="Context file to load and update",
 )
-def write(outline_file, output, context):
+@click.pass_context
+def write(ctx, outline_file, output, context):
     """Generate final story from outline file."""
+    logger = get_logger("cli.write")
+    log_command_start(
+        "write",
+        {"outline_file": outline_file, "output": output, "context": context},
+        logger,
+    )
+
     try:
+        logger.debug(f"Generating story from: {outline_file}")
         click.echo(f"Generating story from: {outline_file}")
 
         # Check for OpenAI API key
         if not os.getenv("OPENAI_CREATIVE_API_KEY"):
+            logger.warning(
+                "OPENAI_CREATIVE_API_KEY not set, using fallback story generation",
+            )
             click.echo(
                 "Warning: OPENAI_CREATIVE_API_KEY not set. Using fallback story generation.",
                 err=True,
@@ -329,20 +438,28 @@ def write(outline_file, output, context):
 
         # Load outline and context
         writer = StoryWriter()
+        logger.debug(f"Loading outline from file: {outline_file}")
         outline_content = writer.load_outline_from_file(outline_file)
+        logger.debug(f"Loading context from file: {context}")
         story_context = writer.load_context_from_file(context)
+        logger.debug("Outline and context loaded successfully")
 
         # Generate story
+        logger.debug("Starting story generation")
         story_content = writer.generate_story(story_context, outline_content)
+        logger.debug("Story generation completed")
 
         # Save story to file
+        logger.debug(f"Saving story to file: {output}")
         writer.save_story_to_file(story_content, output)
 
         # Update context with story and save back
+        logger.debug("Updating context with story")
         writer.update_context_with_story(story_context, story_content)
 
         # Save updated context back to file
         context_dict = story_context.model_dump()
+        logger.debug(f"Saving updated context to file: {context}")
         with open(context, "w", encoding="utf-8") as f:
             yaml.dump(
                 context_dict,
@@ -355,13 +472,20 @@ def write(outline_file, output, context):
         # Calculate and display metrics
         word_count = writer.calculate_word_count(story_content)
         reading_time = writer.calculate_reading_time(word_count)
+        logger.debug(
+            f"Story metrics - Word count: {word_count}, Reading time: {reading_time}",
+        )
 
+        logger.info(f"Story generated successfully: {output}")
         click.echo(f"Story generated successfully: {output}")
         click.echo(f"Context file updated: {context}")
         click.echo(f"Word count: {word_count}")
         click.echo(f"Estimated reading time: {reading_time}")
 
+        log_command_end("write", success=True, logger=logger)
+
     except FileNotFoundError as e:
+        logger.error(f"File not found error: {e}")
         error_str = str(e)
         click.echo(f"❌ File Not Found: {error_str}", err=True)
         click.echo("💡 Troubleshooting:", err=True)
@@ -381,8 +505,10 @@ def write(outline_file, output, context):
             )
             click.echo(f"   • Make sure the context file '{context}' exists", err=True)
         click.echo("   • Check the file paths are correct", err=True)
+        log_command_end("write", success=False, logger=logger)
         raise click.Abort()
     except PermissionError as e:
+        logger.error(f"Permission error: {e}")
         click.echo(
             f"❌ Permission Error: Cannot write to output file - {e!s}",
             err=True,
@@ -391,8 +517,10 @@ def write(outline_file, output, context):
             "💡 Tip: Check file permissions or try a different output directory",
             err=True,
         )
+        log_command_end("write", success=False, logger=logger)
         raise click.Abort()
     except Exception as e:
+        logger.exception("Unexpected error in write command")
         error_msg = str(e).lower()
         if "api" in error_msg or "openai" in error_msg:
             click.echo(f"❌ API Error: {e!s}", err=True)
@@ -418,15 +546,21 @@ def write(outline_file, output, context):
                 "💡 Tip: Check that your outline and context files are valid and complete",
                 err=True,
             )
+        log_command_end("write", success=False, logger=logger)
         raise click.Abort()
 
 
 @main.command()
 @click.option("--verbose", "-v", is_flag=True, help="Show detailed validation results")
 @click.option("--fix", is_flag=True, help="Attempt to fix common template issues")
-def validate_templates(verbose, fix):
+@click.pass_context
+def validate_templates(ctx, verbose, fix):
     """Validate all template files for syntax and completeness."""
+    logger = get_logger("cli.validate_templates")
+    log_command_start("validate_templates", {"verbose": verbose, "fix": fix}, logger)
+
     try:
+        logger.debug("Starting template validation")
         click.echo("Validating template files...")
 
         loader = TemplateLoader()
@@ -580,9 +714,13 @@ def validate_templates(verbose, fix):
                 click.echo("  • Check for typos in variable names")
 
             raise click.Abort()
+        logger.info("All templates are valid")
         click.echo("\n✅ All templates are valid!")
 
+        log_command_end("validate_templates", success=True, logger=logger)
+
     except FileNotFoundError as e:
+        logger.error(f"Template directory not found: {e}")
         click.echo(f"❌ Template Directory Not Found: {e!s}", err=True)
         click.echo("💡 Troubleshooting:", err=True)
         click.echo(
@@ -591,8 +729,10 @@ def validate_templates(verbose, fix):
         )
         click.echo("   • Verify the templates/ directory exists", err=True)
         click.echo("   • Check that template files are properly installed", err=True)
+        log_command_end("validate_templates", success=False, logger=logger)
         raise click.Abort()
     except PermissionError as e:
+        logger.error(f"Permission error reading template files: {e}")
         click.echo(
             f"❌ Permission Error: Cannot read template files - {e!s}",
             err=True,
@@ -601,8 +741,10 @@ def validate_templates(verbose, fix):
             "💡 Tip: Check file permissions in the templates/ directory",
             err=True,
         )
+        log_command_end("validate_templates", success=False, logger=logger)
         raise click.Abort()
     except Exception as e:
+        logger.exception("Template validation error")
         click.echo(f"❌ Template Validation Error: {e!s}", err=True)
         click.echo("💡 Troubleshooting:", err=True)
         click.echo(
@@ -611,6 +753,7 @@ def validate_templates(verbose, fix):
         )
         click.echo("   • Verify template syntax uses {{variable}} format", err=True)
         click.echo("   • Make sure templates/ directory structure is correct", err=True)
+        log_command_end("validate_templates", success=False, logger=logger)
         raise click.Abort()
 
 
@@ -618,9 +761,18 @@ def validate_templates(verbose, fix):
 @click.argument("context_file")
 @click.option("--verbose", "-v", is_flag=True, help="Show detailed validation results")
 @click.option("--fix", is_flag=True, help="Attempt to fix common issues automatically")
-def validate(context_file, verbose, fix):
+@click.pass_context
+def validate(ctx, context_file, verbose, fix):
     """Validate a context file for structure and consistency."""
+    logger = get_logger("cli.validate")
+    log_command_start(
+        "validate",
+        {"context_file": context_file, "verbose": verbose, "fix": fix},
+        logger,
+    )
+
     try:
+        logger.debug(f"Validating context file: {context_file}")
         click.echo(f"Validating context file: {context_file}")
 
         # Import the validation service
@@ -638,12 +790,18 @@ def validate(context_file, verbose, fix):
 
         # Display results
         if validation_result.is_valid:
+            logger.info("Context file is valid")
             click.echo("✅ Context file is valid!")
             if validation_result.warnings:
+                logger.warning(f"Found {len(validation_result.warnings)} warnings")
                 click.echo(f"\n⚠️  {len(validation_result.warnings)} warnings found:")
                 for warning in validation_result.warnings:
                     click.echo(f"  • {warning}")
+            log_command_end("validate", success=True, logger=logger)
         else:
+            logger.error(
+                f"Context file has {len(validation_result.errors)} validation errors",
+            )
             click.echo("❌ Context file has validation errors:")
             for error in validation_result.errors:
                 click.echo(f"  • {error}")
@@ -653,9 +811,11 @@ def validate(context_file, verbose, fix):
                 for suggestion in validation_result.suggestions:
                     click.echo(f"  • {suggestion}")
 
+            log_command_end("validate", success=False, logger=logger)
             raise click.Abort()
 
     except FileNotFoundError as e:
+        logger.error(f"File not found error: {e}")
         click.echo(f"❌ File Not Found: {e!s}", err=True)
         click.echo("💡 Troubleshooting:", err=True)
         click.echo(f"   • Make sure the context file '{context_file}' exists", err=True)
@@ -664,12 +824,16 @@ def validate(context_file, verbose, fix):
             err=True,
         )
         click.echo("   • Check the file path is correct", err=True)
+        log_command_end("validate", success=False, logger=logger)
         raise click.Abort()
     except PermissionError as e:
+        logger.error(f"Permission error: {e}")
         click.echo(f"❌ Permission Error: Cannot read file - {e!s}", err=True)
         click.echo("💡 Tip: Check file permissions", err=True)
+        log_command_end("validate", success=False, logger=logger)
         raise click.Abort()
     except Exception as e:
+        logger.exception("Validation error")
         error_msg = str(e).lower()
         if "yaml" in error_msg or "parse" in error_msg:
             click.echo(
@@ -686,6 +850,7 @@ def validate(context_file, verbose, fix):
                 "💡 Tip: Check that your context file is properly formatted",
                 err=True,
             )
+        log_command_end("validate", success=False, logger=logger)
         raise click.Abort()
 
 

@@ -201,10 +201,13 @@ Now, let me detail the technology stack. This is critical for your implementatio
 - `write` command → StoryWriter
 - Search/list commands → EntityRepository
 - Manual data entry commands → EntityRepository
+- `--verbose` flag → Enables debug-level console logging for all commands
 
 **Dependencies:** Click framework, all service components
 
 **Technology Stack:** Click 8.1+, Python type hints
+
+**Documentation:** See [CLI Reference](cli-reference.md) for complete command documentation
 
 ### ContextGenerator Component
 
@@ -394,6 +397,9 @@ graph TD
 - `OPENAI_CREATIVE_MAX_TOKENS` - Maximum tokens for creative requests
 - `OPENAI_CREATIVE_TEMPERATURE` - Temperature for creative generation (default: 0.7)
 
+### Logging Configuration
+- `JESTIR_LOG_TO_DISK` - Enable disk logging (default: false)
+
 ### Example Configuration
 ```bash
 # Use different models for different tasks
@@ -407,6 +413,9 @@ export OPENAI_CREATIVE_BASE_URL="https://your-creative-endpoint.com/v1"
 # Fine-tune parameters
 export OPENAI_EXTRACTION_TEMPERATURE="0.1"  # Lower for consistent extraction
 export OPENAI_CREATIVE_TEMPERATURE="0.8"    # Higher for more creativity
+
+# Enable disk logging for debugging
+export JESTIR_LOG_TO_DISK="true"
 ```
 
 ## Context Management Strategy
@@ -612,6 +621,8 @@ Development (local) -> Testing (CI) -> Release (PyPI/GitHub)
 - **Library:** Python logging module
 - **Format:** `%(timestamp)s - %(name)s - %(level)s - %(message)s`
 - **Levels:** DEBUG (verbose), INFO (standard), WARNING (issues), ERROR (failures)
+- **Console Logging:** Controlled by `--verbose` CLI flag (debug level output)
+- **Disk Logging:** Controlled by `JESTIR_LOG_TO_DISK` environment variable (off by default)
 - **Required Context:**
   - Correlation ID: Story generation session ID
   - Service Context: Component name

@@ -68,6 +68,9 @@ LIGHTRAG_BASE_URL=http://localhost:8000
 LIGHTRAG_API_KEY=your_lightrag_api_key_here
 LIGHTRAG_TIMEOUT=30
 LIGHTRAG_MOCK_MODE=false
+
+# Logging Configuration (optional)
+JESTIR_LOG_TO_DISK=false  # Set to true to enable disk logging
 ```
 
 **Note:** The `.env` file is automatically loaded when you run Jestir commands. You can also set these environment variables directly in your shell if you prefer.
@@ -106,6 +109,30 @@ jestir outline context.yaml --output my-outline.md
 jestir write outline.md --output my-story.md
 ```
 
+### Debug and Logging Options
+
+**Verbose Mode (Console Debug Logging):**
+```bash
+# Enable verbose output for any command
+jestir --verbose context "story input"
+jestir --verbose outline context.yaml
+jestir --verbose write outline.md
+```
+
+**Disk Logging (Environment Variable):**
+```bash
+# Enable logging to disk (off by default)
+export JESTIR_LOG_TO_DISK=true
+jestir context "story input"
+```
+
+**Combined Usage:**
+```bash
+# Both verbose console output and disk logging
+export JESTIR_LOG_TO_DISK=true
+jestir --verbose context "story input"
+```
+
 ### Context Management
 
 The `jestir context` command now intelligently manages your story context:
@@ -122,6 +149,12 @@ This allows you to iteratively build and refine your story context through natur
 - All subsequent refinements and modifications
 
 The context maintains a complete history of all your natural language inputs, ensuring that every prompt you provide is captured and can be referenced during story generation.
+
+## Documentation
+
+- **[CLI Reference](docs/cli-reference.md)** - Complete command-line interface documentation
+- **[Architecture](docs/architecture.md)** - System architecture and design patterns
+- **[PRD](docs/prd.md)** - Product requirements and specifications
 
 ## Project Structure
 
