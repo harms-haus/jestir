@@ -7,6 +7,7 @@ from openai import OpenAI
 from ..models.api_config import CreativeAPIConfig
 from ..models.story_context import StoryContext
 from .template_loader import TemplateLoader
+from .token_tracker import TokenTracker
 
 
 class OutlineGenerator:
@@ -16,11 +17,13 @@ class OutlineGenerator:
         self,
         config: CreativeAPIConfig | None = None,
         template_loader: TemplateLoader | None = None,
+        token_tracker: TokenTracker | None = None,
     ):
         """Initialize the outline generator with OpenAI configuration."""
         self.config = config or self._load_config_from_env()
         self.client = OpenAI(api_key=self.config.api_key, base_url=self.config.base_url)
         self.template_loader = template_loader or TemplateLoader()
+        self.token_tracker = token_tracker or TokenTracker()
 
     def _load_config_from_env(self) -> CreativeAPIConfig:
         """Load configuration from environment variables."""
@@ -51,6 +54,18 @@ class OutlineGenerator:
                 max_tokens=self.config.max_tokens,
                 temperature=self.config.temperature,
             )
+
+            # Track token usage
+            if hasattr(response, "usage") and response.usage:
+                self.token_tracker.track_usage(
+                    service="outline_generator",
+                    operation="generate_outline",
+                    model=self.config.model,
+                    prompt_tokens=response.usage.prompt_tokens,
+                    completion_tokens=response.usage.completion_tokens,
+                    input_text=str(context.model_dump()),
+                    output_text=response.choices[0].message.content or "",
+                )
 
             content = response.choices[0].message.content
             if content is None:

@@ -190,7 +190,13 @@ class LightRAGClient:
                     headers=headers,
                 )
                 response.raise_for_status()
-                return response.json()
+                data = response.json()
+                if isinstance(data, list) and all(
+                    isinstance(item, str) for item in data
+                ):
+                    return data
+                logger.warning("Unexpected response format from LightRAG API")
+                return self._mock_get_entity_types()
 
         except httpx.ConnectError as e:
             logger.warning(f"LightRAG connection failed: {e}")

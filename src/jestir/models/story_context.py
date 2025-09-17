@@ -17,7 +17,13 @@ class StoryContext(BaseModel):
             "version": "1.0.0",
             "created_at": datetime.now().isoformat(),
             "updated_at": datetime.now().isoformat(),
-            "token_usage": {},
+            "token_usage": {
+                "total_tokens": 0,
+                "total_cost_usd": 0.0,
+                "total_calls": 0,
+                "last_updated": datetime.now().isoformat(),
+                "usage_history": [],
+            },
         },
         description="Version, timestamps, token usage",
     )

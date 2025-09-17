@@ -13,6 +13,7 @@ from ..models.relationship import Relationship
 from ..models.story_context import StoryContext
 from .lightrag_client import LightRAGClient
 from .template_loader import TemplateLoader
+from .token_tracker import TokenTracker
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -26,6 +27,7 @@ class ContextGenerator:
         config: ExtractionAPIConfig | None = None,
         lightrag_config: LightRAGAPIConfig | None = None,
         template_loader: TemplateLoader | None = None,
+        token_tracker: TokenTracker | None = None,
     ):
         """Initialize the context generator with OpenAI and LightRAG configuration."""
         self.config = config or self._load_config_from_env()
@@ -33,6 +35,7 @@ class ContextGenerator:
         self.lightrag_config = lightrag_config or self._load_lightrag_config_from_env()
         self.lightrag_client = LightRAGClient(self.lightrag_config)
         self.template_loader = template_loader or TemplateLoader()
+        self.token_tracker = token_tracker or TokenTracker()
 
     def _load_config_from_env(self) -> ExtractionAPIConfig:
         """Load configuration from environment variables."""
@@ -112,6 +115,18 @@ class ContextGenerator:
                 max_tokens=self.config.max_tokens,
                 temperature=self.config.temperature,
             )
+
+            # Track token usage
+            if hasattr(response, "usage") and response.usage:
+                self.token_tracker.track_usage(
+                    service="context_generator",
+                    operation="extract_entities_and_relationships",
+                    model=self.config.model,
+                    prompt_tokens=response.usage.prompt_tokens,
+                    completion_tokens=response.usage.completion_tokens,
+                    input_text=input_text,
+                    output_text=response.choices[0].message.content or "",
+                )
 
             content = response.choices[0].message.content
             if content is None:

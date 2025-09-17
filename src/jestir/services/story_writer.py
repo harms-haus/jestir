@@ -8,6 +8,7 @@ from openai import OpenAI
 from ..models.api_config import CreativeAPIConfig
 from ..models.story_context import StoryContext
 from .template_loader import TemplateLoader
+from .token_tracker import TokenTracker
 
 
 class StoryWriter:
@@ -17,11 +18,13 @@ class StoryWriter:
         self,
         config: CreativeAPIConfig | None = None,
         template_loader: TemplateLoader | None = None,
+        token_tracker: TokenTracker | None = None,
     ):
         """Initialize the story writer with OpenAI configuration."""
         self.config = config or self._load_config_from_env()
         self.client = OpenAI(api_key=self.config.api_key, base_url=self.config.base_url)
         self.template_loader = template_loader or TemplateLoader()
+        self.token_tracker = token_tracker or TokenTracker()
 
     def _load_config_from_env(self) -> CreativeAPIConfig:
         """Load configuration from environment variables."""
@@ -52,6 +55,18 @@ class StoryWriter:
                 max_tokens=self.config.max_tokens,
                 temperature=self.config.temperature,
             )
+
+            # Track token usage
+            if hasattr(response, "usage") and response.usage:
+                self.token_tracker.track_usage(
+                    service="story_writer",
+                    operation="generate_story",
+                    model=self.config.model,
+                    prompt_tokens=response.usage.prompt_tokens,
+                    completion_tokens=response.usage.completion_tokens,
+                    input_text=f"{context.model_dump()!s}\n\nOutline:\n{outline}",
+                    output_text=response.choices[0].message.content or "",
+                )
 
             content = response.choices[0].message.content
             if content is None:

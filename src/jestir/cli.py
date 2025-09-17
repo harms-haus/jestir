@@ -17,6 +17,7 @@ from .services.lightrag_client import LightRAGClient
 from .services.outline_generator import OutlineGenerator
 from .services.story_writer import StoryWriter
 from .services.template_loader import TemplateLoader
+from .services.token_tracker import TokenTracker
 from .utils.logging_config import (
     get_logger,
     log_command_end,
@@ -79,7 +80,8 @@ def context(ctx, input_text, output):
             click.echo("No existing context found, creating new one...")
 
         # Generate or update context
-        generator = ContextGenerator()
+        token_tracker = TokenTracker()
+        generator = ContextGenerator(token_tracker=token_tracker)
         if existing_context:
             logger.debug(f"Updating context with input: {input_text}")
             click.echo(f"Updating context with: {input_text}")
@@ -88,6 +90,9 @@ def context(ctx, input_text, output):
             logger.debug(f"Generating new context from input: {input_text}")
             click.echo(f"Generating new context from: {input_text}")
             updated_context = generator.generate_context(input_text)
+
+        # Save token usage to context
+        token_tracker.save_usage_to_context(output)
 
         # Convert to dict for YAML serialization
         context_dict = updated_context.model_dump()
@@ -197,10 +202,14 @@ def context_new(ctx, input_text, output):
             )
 
         # Generate context
-        generator = ContextGenerator()
+        token_tracker = TokenTracker()
+        generator = ContextGenerator(token_tracker=token_tracker)
         logger.debug("Starting context generation")
         context = generator.generate_context(input_text)
         logger.debug("Context generation completed")
+
+        # Save token usage to context
+        token_tracker.save_usage_to_context(output)
 
         # Convert to dict for YAML serialization
         context_dict = context.model_dump()
@@ -309,7 +318,9 @@ def outline(ctx, context_file, output):
             )
 
         # Load context from file
-        generator = OutlineGenerator()
+        token_tracker = TokenTracker()
+        token_tracker.load_usage_from_context(context_file)
+        generator = OutlineGenerator(token_tracker=token_tracker)
         logger.debug(f"Loading context from file: {context_file}")
         context = generator.load_context_from_file(context_file)
         logger.debug("Context loaded successfully")
@@ -318,6 +329,9 @@ def outline(ctx, context_file, output):
         logger.debug("Starting outline generation")
         outline_content = generator.generate_outline(context)
         logger.debug("Outline generation completed")
+
+        # Save token usage to context
+        token_tracker.save_usage_to_context(context_file)
 
         # Save outline to file
         logger.debug(f"Saving outline to file: {output}")
@@ -437,7 +451,9 @@ def write(ctx, outline_file, output, context):
             )
 
         # Load outline and context
-        writer = StoryWriter()
+        token_tracker = TokenTracker()
+        token_tracker.load_usage_from_context(context)
+        writer = StoryWriter(token_tracker=token_tracker)
         logger.debug(f"Loading outline from file: {outline_file}")
         outline_content = writer.load_outline_from_file(outline_file)
         logger.debug(f"Loading context from file: {context}")
@@ -448,6 +464,9 @@ def write(ctx, outline_file, output, context):
         logger.debug("Starting story generation")
         story_content = writer.generate_story(story_context, outline_content)
         logger.debug("Story generation completed")
+
+        # Save token usage to context
+        token_tracker.save_usage_to_context(context)
 
         # Save story to file
         logger.debug(f"Saving story to file: {output}")
@@ -1368,6 +1387,166 @@ def fuzzy(name, entity_type):
 
     except Exception as e:
         click.echo(f"Error in fuzzy search: {e!s}", err=True)
+        raise click.Abort()
+
+
+@main.command()
+@click.option("--context", "-c", default="context.yaml", help="Context file to analyze")
+@click.option(
+    "--period",
+    "-p",
+    type=click.Choice(["daily", "weekly", "monthly"]),
+    default="monthly",
+    help="Report period",
+)
+@click.option(
+    "--format",
+    "-f",
+    type=click.Choice(["table", "json", "yaml"]),
+    default="table",
+    help="Output format",
+)
+@click.option("--export", "-e", help="Export report to file")
+@click.option("--suggestions", "-s", is_flag=True, help="Show optimization suggestions")
+@click.pass_context
+def stats(ctx, context, period, output_format, export, suggestions):
+    """Show token usage statistics and cost analysis."""
+    logger = get_logger("cli.stats")
+    log_command_start(
+        "stats",
+        {"context": context, "period": period, "format": output_format},
+        logger,
+    )
+
+    try:
+        logger.debug(f"Generating stats for context: {context}")
+        click.echo("Generating token usage statistics...")
+
+        # Load token tracker and usage from context
+        token_tracker = TokenTracker()
+        token_tracker.load_usage_from_context(context)
+
+        # Generate report
+        report = token_tracker.generate_report(period=period)
+
+        if output_format == "json":
+            click.echo(json.dumps(report.model_dump(), indent=2, default=str))
+        elif output_format == "yaml":
+            click.echo(
+                yaml.dump(
+                    report.model_dump(),
+                    default_flow_style=False,
+                    allow_unicode=True,
+                ),
+            )
+        else:
+            # Table format
+            click.echo(f"\n📊 Token Usage Statistics ({period.title()})")
+            click.echo("=" * 50)
+
+            # Summary
+            summary = report.summary
+            click.echo(f"Total Tokens: {summary.total_tokens:,}")
+            click.echo(f"Total Cost: ${summary.total_cost_usd:.4f}")
+            click.echo(f"Total API Calls: {summary.total_calls}")
+
+            if summary.total_calls > 0:
+                avg_tokens = summary.total_tokens / summary.total_calls
+                avg_cost = summary.total_cost_usd / summary.total_calls
+                click.echo(f"Average Tokens per Call: {avg_tokens:.1f}")
+                click.echo(f"Average Cost per Call: ${avg_cost:.4f}")
+
+            # By service
+            if summary.by_service:
+                click.echo("\n📈 Usage by Service:")
+                click.echo("-" * 30)
+                for service, data in summary.by_service.items():
+                    click.echo(f"{service}:")
+                    click.echo(f"  Tokens: {data['total_tokens']:,}")
+                    click.echo(f"  Cost: ${data['total_cost']:.4f}")
+                    click.echo(f"  Calls: {data['total_calls']}")
+
+            # By operation
+            if summary.by_operation:
+                click.echo("\n🔧 Usage by Operation:")
+                click.echo("-" * 30)
+                for operation, data in summary.by_operation.items():
+                    click.echo(f"{operation}:")
+                    click.echo(f"  Tokens: {data['total_tokens']:,}")
+                    click.echo(f"  Cost: ${data['total_cost']:.4f}")
+                    click.echo(f"  Calls: {data['total_calls']}")
+
+            # By model
+            if summary.by_model:
+                click.echo("\n🤖 Usage by Model:")
+                click.echo("-" * 30)
+                for model, data in summary.by_model.items():
+                    click.echo(f"{model}:")
+                    click.echo(f"  Tokens: {data['total_tokens']:,}")
+                    click.echo(f"  Cost: ${data['total_cost']:.4f}")
+                    click.echo(f"  Calls: {data['total_calls']}")
+                    click.echo(f"  Avg Tokens/Call: {data['avg_tokens_per_call']:.1f}")
+
+            # Top operations
+            if report.top_operations:
+                click.echo("\n🏆 Top Operations by Token Usage:")
+                click.echo("-" * 40)
+                for i, op in enumerate(report.top_operations[:5], 1):
+                    click.echo(f"{i}. {op['operation']}")
+                    click.echo(f"   Tokens: {op['total_tokens']:,}")
+                    click.echo(f"   Cost: ${op['total_cost']:.4f}")
+                    click.echo(f"   Calls: {op['total_calls']}")
+
+            # Cost trends
+            if report.cost_trends:
+                click.echo("\n📈 Cost Trends:")
+                click.echo("-" * 20)
+                for trend in report.cost_trends[-7:]:  # Show last 7 entries
+                    date_key = (
+                        trend.get("date") or trend.get("week") or trend.get("month")
+                    )
+                    click.echo(
+                        f"{date_key}: ${trend['cost']:.4f} ({trend['tokens']:,} tokens)",
+                    )
+
+            # Optimization suggestions
+            if suggestions and report.optimization_suggestions:
+                click.echo("\n💡 Optimization Suggestions:")
+                click.echo("-" * 30)
+                for i, suggestion in enumerate(report.optimization_suggestions, 1):
+                    click.echo(f"{i}. {suggestion.title}")
+                    click.echo(f"   {suggestion.description}")
+                    if suggestion.potential_savings > 0:
+                        click.echo(
+                            f"   Potential Savings: ${suggestion.potential_savings:.2f}",
+                        )
+                    click.echo(f"   Action: {suggestion.action_required}")
+                    click.echo()
+
+        # Export if requested
+        if export:
+            token_tracker.export_report(report, export)
+            click.echo(f"Report exported to: {export}")
+
+        log_command_end("stats", success=True, logger=logger)
+
+    except FileNotFoundError as e:
+        logger.error(f"Context file not found: {e}")
+        click.echo(f"❌ Context file not found: {e!s}", err=True)
+        click.echo(
+            "💡 Tip: Generate a context file first: 'jestir context \"your story idea\"'",
+            err=True,
+        )
+        log_command_end("stats", success=False, logger=logger)
+        raise click.Abort()
+    except Exception as e:
+        logger.exception("Unexpected error in stats command")
+        click.echo(f"❌ Stats Error: {e!s}", err=True)
+        click.echo(
+            "💡 Tip: Check that your context file is valid and contains token usage data",
+            err=True,
+        )
+        log_command_end("stats", success=False, logger=logger)
         raise click.Abort()
 
 
