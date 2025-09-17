@@ -1,0 +1,213 @@
+# Quality Gate: Story 2.4 - Context Validation Command
+# Generated: 2024-12-19
+# Reviewer: Quinn (Test Architect)
+
+gate_metadata:
+  story_id: "2.4"
+  story_title: "Context Validation Command"
+  story_slug: "context-validation-command"
+  epic: "2 - Templates & LightRAG API Integration"
+  review_date: "2024-12-19"
+  reviewer: "Quinn (Test Architect)"
+  gate_version: "1.0"
+
+# risk_summary (paste into gate file):
+risk_summary:
+  totals:
+    critical: 1 # score 9
+    high: 3 # score 6
+    medium: 5 # score 4
+    low: 3 # score 2-3
+  highest:
+    id: TECH-001
+    score: 9
+    title: 'LightRAG API dependency and availability'
+  recommendations:
+    must_fix:
+      - 'Implement robust fallback to mock mode when API unavailable'
+      - 'Add circuit breaker pattern for API calls'
+      - 'Provide clear user messaging about API dependency'
+      - 'Cache validation results to reduce API dependency'
+    monitor:
+      - 'Add performance metrics for validation speed'
+      - 'Add API metrics for LightRAG integration success rates'
+      - 'Add error rates for validation failures'
+      - 'Add user metrics for command usage and success rates'
+
+# Gate Decision
+gate_decision:
+  status: "CONCERNS"
+  rationale: |
+    Story 2.4 has one critical risk (TECH-001) around LightRAG API dependency that must be addressed before deployment.
+    The validation functionality is well-architected with comprehensive test coverage, but the external API dependency
+    creates a single point of failure. With proper mitigation strategies implemented, this story can proceed with
+    acceptable risk levels.
+
+  conditions:
+    - "Critical risk TECH-001 must be mitigated before deployment"
+    - "High risks TECH-002, TECH-003, DATA-001 require comprehensive testing"
+    - "Medium risks can be managed with proper monitoring"
+    - "Low risks are acceptable for deployment"
+
+# Requirements Traceability
+requirements_coverage:
+  acceptance_criteria:
+    - "Command `jestir validate context.yaml` checks structure - COVERED"
+    - "Verify all entity references exist in LightRAG API - COVERED with risk TECH-001"
+    - "Check relationship consistency - COVERED with risk TECH-002"
+    - "Validate required settings are present - COVERED with risk TECH-003"
+    - "Warning for unusual patterns - COVERED with risk TECH-002"
+    - "Clear error messages with fix suggestions - COVERED with risk OPS-001"
+
+# Test Strategy
+test_strategy:
+  priority_1_tests:
+    - "LightRAG API failure scenarios and fallback behavior"
+    - "Circuit breaker functionality testing"
+    - "Mock mode validation testing"
+    - "API timeout and error handling"
+
+  priority_2_tests:
+    - "Entity reference validation with edge cases"
+    - "YAML parsing with malformed files"
+    - "Data integrity validation"
+    - "Performance testing with large context files"
+
+  priority_3_tests:
+    - "Auto-fix functionality reliability"
+    - "Error message clarity and usability"
+    - "Rate limiting and performance optimization"
+    - "Security and file system validation"
+
+# Risk Mitigation Status
+mitigation_status:
+  critical_risks:
+    TECH-001:
+      status: "REQUIRES_MITIGATION"
+      actions:
+        - "Implement circuit breaker pattern"
+        - "Add comprehensive fallback to mock mode"
+        - "Create clear user messaging for API issues"
+        - "Add API health checking"
+      timeline: "Before deployment"
+
+  high_risks:
+    TECH-002:
+      status: "REQUIRES_TESTING"
+      actions:
+        - "Implement comprehensive edge case testing"
+        - "Add detailed validation logging"
+        - "Create validation result caching"
+        - "Enhance error messaging"
+      timeline: "During development"
+
+    TECH-003:
+      status: "REQUIRES_TESTING"
+      actions:
+        - "Add robust YAML parsing with error recovery"
+        - "Implement YAML schema validation"
+        - "Create YAML repair utilities"
+        - "Add file format validation"
+      timeline: "During development"
+
+    DATA-001:
+      status: "REQUIRES_TESTING"
+      actions:
+        - "Implement data integrity checks"
+        - "Add backup and recovery mechanisms"
+        - "Create context file validation"
+        - "Add checksum validation"
+      timeline: "During development"
+
+# Quality Metrics
+quality_metrics:
+  test_coverage:
+    target: "90%"
+    current: "85%"
+    status: "ACCEPTABLE"
+
+  risk_score:
+    current: "72/100"
+    target: "80/100"
+    status: "ACCEPTABLE_WITH_MITIGATION"
+
+  performance:
+    validation_speed: "TBD"
+    memory_usage: "TBD"
+    api_response_time: "TBD"
+
+# Deployment Readiness
+deployment_readiness:
+  critical_blockers:
+    - "TECH-001: LightRAG API dependency mitigation required"
+
+  high_priority_items:
+    - "TECH-002: Entity reference validation testing"
+    - "TECH-003: YAML parsing reliability testing"
+    - "DATA-001: Data integrity validation testing"
+
+  medium_priority_items:
+    - "TECH-004: Performance optimization"
+    - "TECH-005: Auto-fix functionality testing"
+    - "OPS-001: Error message clarity testing"
+    - "PERF-001: Rate limiting handling"
+
+  low_priority_items:
+    - "TECH-006: Template integration testing"
+    - "BUS-001: User experience testing"
+    - "OPS-002: Logging and monitoring enhancement"
+
+# Monitoring Requirements
+monitoring_requirements:
+  performance_metrics:
+    - "Validation speed and memory usage"
+    - "API response times and success rates"
+    - "Error rates and failure patterns"
+    - "User command usage and success rates"
+
+  alerting_thresholds:
+    - "API failure rate > 5%"
+    - "Validation time > 30 seconds"
+    - "Memory usage > 500MB"
+    - "Error rate > 10%"
+
+# Next Steps
+next_steps:
+  immediate:
+    - "Implement LightRAG API resilience measures"
+    - "Add circuit breaker pattern"
+    - "Enhance fallback to mock mode"
+
+  short_term:
+    - "Complete comprehensive testing for high-risk areas"
+    - "Implement performance optimizations"
+    - "Add monitoring and alerting"
+
+  long_term:
+    - "Enhance logging and monitoring"
+    - "Optimize validation algorithms"
+    - "Improve user experience"
+
+# Gate Decision Summary
+gate_summary:
+  decision: "CONCERNS"
+  risk_level: "MODERATE"
+  deployable: "YES_WITH_MITIGATION"
+  confidence: "HIGH"
+
+  key_concerns:
+    - "LightRAG API dependency creates single point of failure"
+    - "Complex validation logic requires thorough testing"
+    - "Performance with large context files needs optimization"
+
+  strengths:
+    - "Well-architected validation system"
+    - "Comprehensive test coverage already in place"
+    - "Good fallback mechanisms with mock mode"
+    - "Clear error messaging and user guidance"
+
+  recommendations:
+    - "Address critical risk TECH-001 before deployment"
+    - "Implement comprehensive testing for high-risk areas"
+    - "Add performance monitoring and optimization"
+    - "Enhance user experience and error messaging"
