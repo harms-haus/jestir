@@ -107,7 +107,7 @@ CRITICAL DECISION - Comprehensive testing including:
 - YAML for context files
 - Markdown for human-readable outputs
 - External template files with {{key}} substitution pattern
-- Poetry for dependency management
+- uv for dependency management
 - pytest for testing framework
 - Black for code formatting
 - mypy for type checking
@@ -132,7 +132,7 @@ so that I have a maintainable codebase with all required tools.
 
 **Acceptance Criteria:**
 
-1. Python project initialized with Poetry for dependency management
+1. Python project initialized with uv for dependency management
 2. Project structure created with src/, tests/, templates/, and output/ directories
 3. Core dependencies installed (PyYAML, OpenAI, pytest, black, mypy)
 4. Basic CLI structure using Click or argparse

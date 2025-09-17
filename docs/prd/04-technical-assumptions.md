@@ -25,7 +25,7 @@ CRITICAL DECISION - Comprehensive testing including:
 - YAML for context files
 - Markdown for human-readable outputs
 - External template files with {{key}} substitution pattern
-- Poetry for dependency management
+- uv for dependency management
 - pytest for testing framework
 - Black for code formatting
 - mypy for type checking

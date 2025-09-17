@@ -34,7 +34,7 @@ def audit_dependencies() -> None:
         ["pip-audit", "--version"], "Checking pip-audit version"
     )
     if not success:
-        print("❌ pip-audit not found. Please install with: poetry install")
+        print("❌ pip-audit not found. Please install with: uv sync")
         sys.exit(1)
 
     # Run pip-audit check
@@ -85,7 +85,7 @@ def audit_code() -> None:
     # Check if bandit is available
     success, output = run_command(["bandit", "--version"], "Checking bandit version")
     if not success:
-        print("❌ Bandit not found. Please install with: poetry install --group dev")
+        print("❌ Bandit not found. Please install with: uv sync")
         sys.exit(1)
 
     # Run bandit scan on source code

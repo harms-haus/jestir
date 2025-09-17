@@ -24,7 +24,7 @@ Jestir is a command-line tool that generates personalized bedtime stories throug
 ### Prerequisites
 
 - Python 3.10 or higher
-- Poetry (for dependency management)
+- uv (for dependency management and virtual environments)
 
 ### Setup
 
@@ -34,14 +34,14 @@ Jestir is a command-line tool that generates personalized bedtime stories throug
    cd jestir
    ```
 
-2. Install dependencies using Poetry:
+2. Install dependencies and create virtual environment using uv:
    ```bash
-   poetry install
+   uv sync
    ```
 
 3. Activate the virtual environment:
    ```bash
-   poetry shell
+   uv shell
    ```
 
 ## Configuration
@@ -140,26 +140,26 @@ jestir/
 ### Running Tests
 
 ```bash
-poetry run pytest
+uv run pytest
 ```
 
 ### Code Formatting
 
 ```bash
-poetry run black src/ tests/
+uv run black src/ tests/
 ```
 
 ### Type Checking
 
 ```bash
-poetry run mypy src/
+uv run mypy src/
 ```
 
 ### Pre-commit Hooks
 
 Install pre-commit hooks:
 ```bash
-poetry run pre-commit install
+uv run pre-commit install
 ```
 
 ## License

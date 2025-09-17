@@ -88,7 +88,7 @@ Now, let me detail the technology stack. This is critical for your implementatio
 | Category | Technology | Version | Purpose | Rationale |
 |----------|------------|---------|---------|-----------|
 | **Language** | Python | 3.8+ | Primary development language | Type hints, broad compatibility, rich ecosystem |
-| **Package Manager** | Poetry | 1.7+ | Dependency management | Lock file support, virtual env management |
+| **Package Manager** | uv | 0.4+ | Dependency management | Fast, reliable dependency resolution with integrated virtual environment management |
 | **CLI Framework** | Click | 8.1+ | Command-line interface | Declarative commands, automatic help, testing support |
 | **LLM Integration** | OpenAI Python SDK | 1.0+ | AI content generation | Official SDK, async support, token counting, dual client support |
 | **Vector Retrieval** | LightRAG API | Latest | Entity retrieval | REST API for graph-based retrieval, natural language queries via /query endpoint |
@@ -562,7 +562,7 @@ What's your preference?
 ├── output/                  # Generated stories (gitignored)
 ├── .env.example
 ├── .gitignore
-├── pyproject.toml          # Poetry configuration
+├── pyproject.toml          # package configuration
 ├── README.md
 └── Makefile                # Common commands
 ```
@@ -573,7 +573,7 @@ What's your preference?
 
 - **Tool:** Not applicable for CLI
 - **Location:** N/A
-- **Approach:** Local installation via pip/poetry
+- **Approach:** Local installation via pip/uv
 
 ### Deployment Strategy
 

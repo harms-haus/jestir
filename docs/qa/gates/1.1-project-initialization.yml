@@ -28,7 +28,7 @@ risk_summary:
     title: 'Dependency vulnerabilities'
   recommendations:
     must_fix:
-      - 'Implement poetry audit for security scanning'
+      - 'Implement uv audit for security scanning'
       - 'Pin all dependency versions in pyproject.toml'
       - 'Set up automated security scanning in CI/CD'
     monitor:
@@ -46,7 +46,7 @@ quality_metrics:
 # Next Steps
 next_steps:
   - "Implement security scanning for dependencies"
-  - "Document Poetry configuration decisions"
+  - "Document uv configuration decisions"
   - "Set up pre-commit hooks with security checks"
   - "Create development environment setup guide"
 

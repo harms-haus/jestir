@@ -10,7 +10,7 @@ so that I have a maintainable codebase with all required tools.
 
 **Acceptance Criteria:**
 
-1. Python project initialized with Poetry for dependency management
+1. Python project initialized with uv for dependency management
 2. Project structure created with src/, tests/, templates/, and output/ directories
 3. Core dependencies installed (PyYAML, OpenAI, pytest, black, mypy)
 4. Basic CLI structure using Click or argparse

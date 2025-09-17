@@ -59,7 +59,7 @@ bedtime-story-generator/
 ├── output/                  # Generated stories (gitignored)
 ├── .env.example
 ├── .gitignore
-├── pyproject.toml          # Poetry configuration
+├── pyproject.toml          # uv configuration
 ├── README.md
 └── Makefile                # Common commands
 ```

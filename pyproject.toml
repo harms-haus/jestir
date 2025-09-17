@@ -6,14 +6,14 @@ authors = [
     {name = "Blake",email = "blake@example.com"}
 ]
 readme = "README.md"
-requires-python = "^3.10"
+requires-python = ">=3.10"
 dependencies = [
-    "pyyaml (>=6.0.2,<7.0.0)",
-    "openai (>=1.107.3,<2.0.0)",
-    "click (>=8.2.1,<9.0.0)",
-    "httpx (>=0.25.0,<1.0.0)",
-    "pydantic (>=2.0.0,<3.0.0)",
-    "python-dotenv (>=1.0.0,<2.0.0)"
+    "pyyaml>=6.0.2,<7.0.0",
+    "openai>=1.107.3,<2.0.0",
+    "click>=8.2.1,<9.0.0",
+    "httpx>=0.25.0,<1.0.0",
+    "pydantic>=2.0.0,<3.0.0",
+    "python-dotenv>=1.0.0,<2.0.0"
 ]
 
 [project.scripts]
@@ -25,15 +25,17 @@ security-report = "jestir.security:generate_security_report"
 
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.poetry.group.dev.dependencies]
-pytest = ">=8.4.2,<9.0.0"
-pytest-asyncio = ">=0.25.0,<1.0.0"
-black = ">=25.1.0,<26.0.0"
-mypy = ">=1.18.1,<2.0.0"
-pre-commit = ">=4.3.0,<5.0.0"
-types-pyyaml = ">=6.0.12.20250915,<7.0.0.0"
-pip-audit = ">=2.6.0,<3.0.0"
-bandit = ">=1.7.10,<2.0.0"
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.4.2,<9.0.0",
+    "pytest-asyncio>=0.25.0,<1.0.0",
+    "black>=25.1.0,<26.0.0",
+    "mypy>=1.18.1,<2.0.0",
+    "pre-commit>=4.3.0,<5.0.0",
+    "types-pyyaml>=6.0.12.20250915,<7.0.0.0",
+    "pip-audit>=2.6.0,<3.0.0",
+    "bandit>=1.7.10,<2.0.0",
+]
