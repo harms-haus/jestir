@@ -14,7 +14,7 @@
 | **Package Manager** | Poetry | 1.7+ | Dependency management | Lock file support, virtual env management |
 | **CLI Framework** | Click | 8.1+ | Command-line interface | Declarative commands, automatic help, testing support |
 | **LLM Integration** | OpenAI Python SDK | 1.0+ | AI content generation | Official SDK, async support, token counting, dual client support |
-| **Vector Retrieval** | LightRAG API | Latest | Entity retrieval | REST API for graph-based retrieval, natural language queries via /query endpoint |
+| **Knowledge Graph & RAG** | LightRAG API | Latest | Hybrid entity retrieval | Knowledge-graph and RAG hybrid system with natural language queries, no traditional IDs, returns natural language responses by default |
 | **Data Format** | PyYAML | 6.0 | Context file handling | Human-readable, preserves structure |
 | **Template Engine** | Custom | N/A | Simple {{key}} substitution | Minimal complexity, easy to understand |
 | **Testing** | pytest | 7.4+ | Unit and integration tests | Fixtures, mocking, good assertion messages |

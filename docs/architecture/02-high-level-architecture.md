@@ -2,7 +2,9 @@
 
 ## Technical Summary
 
-The system employs a modular pipeline architecture with three distinct stages (context generation, outline creation, story writing) that process data sequentially through file-based intermediates. Built as a Python CLI application, it integrates with the LightRAG API for read-only entity retrieval and uses OpenAI's API for content generation. The architecture prioritizes human control through editable intermediate files, cost optimization through token tracking, and extensibility through external template files. This design directly supports the PRD goals of controlled story generation with consistent world-building.
+The system employs a modular pipeline architecture with three distinct stages (context generation, outline creation, story writing) that process data sequentially through file-based intermediates. Built as a Python CLI application, it integrates with LightRAG (a knowledge-graph and RAG hybrid system) for natural language entity retrieval and uses OpenAI's API for content generation. The architecture prioritizes human control through editable intermediate files, cost optimization through token tracking, and extensibility through external template files. This design directly supports the PRD goals of controlled story generation with consistent world-building.
+
+**LightRAG Integration:** The system leverages LightRAG's hybrid knowledge-graph and RAG capabilities to process natural language queries about entities and relationships. Unlike traditional systems with rigid IDs, LightRAG uses natural language entity names and returns information in natural language format by default, with optional structured data formats (JSON) when needed.
 
 ## High Level Overview
 
@@ -18,7 +20,7 @@ The main architectural style is a **Pipeline Architecture** with file-based comm
 ```mermaid
 graph TD
     A[User Input<br/>Natural Language] --> B[Context Generator]
-    B --> C[(LightRAG API<br/>Entity Retrieval)]
+    B --> C[(LightRAG API<br/>Knowledge Graph & RAG Hybrid<br/>Natural Language Queries)]
     B --> D[context.yaml]
 
     D --> E[Outline Generator]
@@ -40,6 +42,7 @@ graph TD
     style D fill:#f9f,stroke:#333,stroke-width:2px
     style F fill:#f9f,stroke:#333,stroke-width:2px
     style H fill:#f9f,stroke:#333,stroke-width:2px
+    style C fill:#e1f5fe,stroke:#01579b,stroke-width:2px
 ```
 
 ## Architectural and Design Patterns
