@@ -6,7 +6,8 @@
 
 **Key Interfaces:**
 
-- `context` command → ContextGenerator
+- `context` command → ContextGenerator (intelligent update/create)
+- `context new` command → ContextGenerator (always create new)
 - `outline` command → OutlineGenerator
 - `write` command → StoryWriter
 - Search/list commands → EntityRepository
@@ -22,7 +23,9 @@
 
 **Key Interfaces:**
 
-- `generate(input_text: str, existing_context: Optional[StoryContext]) → StoryContext`
+- `generate_context(input_text: str) → StoryContext` - Creates new context from natural language
+- `update_context(input_text: str, existing_context: StoryContext) → StoryContext` - Updates existing context with new input
+- `load_context_from_file(file_path: str) → StoryContext` - Loads existing context from YAML file
 - `extract_entities(text: str) → List[Entity]` - Uses OpenAI AI to parse natural language and identify entities
 - `extract_relationships(text: str, entities: List[Entity]) → List[Relationship]` - Uses OpenAI AI to parse natural language and extract relationships
 

@@ -21,18 +21,21 @@ so that I have a maintainable codebase with all required tools.
 ## Story 1.2: Context Generation Pipeline
 
 As a parent,
-I want to input a natural language story request and generate a context file using OpenAI AI parsing,
-so that I have a structured representation of my story requirements.
+I want to input a natural language story request and generate or update a context file using OpenAI AI parsing,
+so that I have a structured representation of my story requirements that can be iteratively built.
 
 **Acceptance Criteria:**
 
-1. CLI command `story context "natural language input"` creates context.yaml
-2. YAML schema implemented as designed (metadata, settings, entities, relationships, user_inputs, plot_points)
-3. Default output to context.yaml with option to specify custom filename
-4. Entity extraction identifies character names and marks them as new/existing based on LightRAG API queries (mock LightRAG API for now)
-5. Relationship extraction identifies basic relationships (visits, finds, creates)
-6. Unit tests cover YAML generation and structure validation
-7. Error handling for malformed input
+1. CLI command `jestir context "natural language input"` intelligently creates or updates context.yaml
+2. CLI command `jestir context new "natural language input"` always creates a new context.yaml
+3. YAML schema implemented as designed (metadata, settings, entities, relationships, user_inputs, plot_points)
+4. Default output to context.yaml with option to specify custom filename
+5. Entity extraction identifies character names and marks them as new/existing based on LightRAG API queries (mock LightRAG API for now)
+6. Relationship extraction identifies basic relationships (visits, finds, creates)
+7. Context update functionality merges new entities with existing ones intelligently
+8. All user prompts preserved in context file for complete conversation history
+9. Unit tests cover YAML generation, structure validation, and context update scenarios
+10. Error handling for malformed input
 
 ## Story 1.3: Outline Generation Pipeline
 
@@ -42,7 +45,7 @@ so that I can review and edit the story structure before final generation.
 
 **Acceptance Criteria:**
 
-1. CLI command `story outline context.yaml` creates outline.md
+1. CLI command `jestir outline context.yaml` creates outline.md
 2. OpenAI API integration for outline generation
 3. Template system reads outline_template.txt with {{key}} substitutions
 4. Outline in markdown format with clear sections/scenes
@@ -58,7 +61,7 @@ so that I have a complete bedtime story ready to read.
 
 **Acceptance Criteria:**
 
-1. CLI command `story write outline.md` creates story.md
+1. CLI command `jestir write outline.md` creates story.md
 2. OpenAI API call uses outline and context for story generation
 3. Template system reads story_template.txt with {{key}} substitutions
 4. Plain markdown output with proper paragraph formatting

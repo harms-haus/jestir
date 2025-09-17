@@ -29,7 +29,107 @@ def main():
 @click.argument("input_text")
 @click.option("--output", "-o", default="context.yaml", help="Output context file")
 def context(input_text, output):
-    """Generate context from natural language input."""
+    """Update existing context or create new one from natural language input."""
+    try:
+        # Check if default context file exists
+        default_context_file = "context.yaml"
+        existing_context = None
+
+        if os.path.exists(default_context_file):
+            click.echo(f"Found existing context file: {default_context_file}")
+            try:
+                # Load existing context
+                generator = ContextGenerator()
+                existing_context = generator.load_context_from_file(
+                    default_context_file
+                )
+                click.echo("Loading existing context for updates...")
+            except Exception as e:
+                click.echo(f"Warning: Could not load existing context: {e}")
+                click.echo("Creating new context instead...")
+                existing_context = None
+        else:
+            click.echo("No existing context found, creating new one...")
+
+        # Generate or update context
+        generator = ContextGenerator()
+        if existing_context:
+            click.echo(f"Updating context with: {input_text}")
+            updated_context = generator.update_context(input_text, existing_context)
+        else:
+            click.echo(f"Generating new context from: {input_text}")
+            updated_context = generator.generate_context(input_text)
+
+        # Convert to dict for YAML serialization
+        context_dict = updated_context.model_dump()
+
+        # Write to file
+        output_path = Path(output)
+        with open(output_path, "w", encoding="utf-8") as f:
+            yaml.dump(
+                context_dict,
+                f,
+                default_flow_style=False,
+                allow_unicode=True,
+                sort_keys=False,
+            )
+
+        action = "Updated" if existing_context else "Generated"
+        click.echo(f"Context {action.lower()} successfully: {output}")
+        click.echo(
+            f"Found {len(updated_context.entities)} entities and {len(updated_context.relationships)} relationships"
+        )
+        click.echo(f"Plot points: {len(updated_context.plot_points)}")
+
+    except FileNotFoundError as e:
+        click.echo(f"❌ File Error: Cannot access file - {str(e)}", err=True)
+        click.echo(
+            "💡 Tip: Make sure you have write permissions to the output directory",
+            err=True,
+        )
+        raise click.Abort()
+    except PermissionError as e:
+        click.echo(
+            f"❌ Permission Error: Cannot write to output file - {str(e)}", err=True
+        )
+        click.echo(
+            "💡 Tip: Check file permissions or try a different output directory",
+            err=True,
+        )
+        raise click.Abort()
+    except Exception as e:
+        error_msg = str(e).lower()
+        if "api" in error_msg or "openai" in error_msg:
+            click.echo(f"❌ API Error: {str(e)}", err=True)
+            click.echo("💡 Troubleshooting:", err=True)
+            click.echo(
+                "   • Check your OPENAI_EXTRACTION_API_KEY environment variable",
+                err=True,
+            )
+            click.echo(
+                "   • Verify your OpenAI account has sufficient credits", err=True
+            )
+            click.echo("   • Check your internet connection", err=True)
+        elif "template" in error_msg:
+            click.echo(f"❌ Template Error: {str(e)}", err=True)
+            click.echo(
+                "💡 Tip: Run 'jestir validate-templates' to check template files",
+                err=True,
+            )
+        else:
+            click.echo(f"❌ Unexpected Error: {str(e)}", err=True)
+            click.echo(
+                "💡 Tip: Try running with a simpler input text or check the logs",
+                err=True,
+            )
+        raise click.Abort()
+
+
+@main.command()
+@click.argument("input_text")
+@click.option("--output", "-o", default="context.yaml", help="Output context file")
+def context_new(input_text, output):
+    """Generate a new context from natural language input."""
     try:
         click.echo(f"Generating context from: {input_text}")
 

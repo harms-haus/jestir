@@ -337,3 +337,94 @@ Extract all mentioned characters, locations, items, and their relationships. Mar
         )
 
         return enriched_entities
+
+    def load_context_from_file(self, file_path: str) -> StoryContext:
+        """Load an existing context from a YAML file."""
+        import yaml
+        from pathlib import Path
+
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+
+        return StoryContext(**data)
+
+    def update_context(
+        self, input_text: str, existing_context: StoryContext
+    ) -> StoryContext:
+        """Update an existing context with new natural language input."""
+        # Add the new user input
+        existing_context.add_user_input("update_request", input_text)
+
+        # Extract new entities and relationships from the input
+        new_entities, new_relationships = self._extract_entities_and_relationships(
+            input_text
+        )
+
+        # Check for existing entities in LightRAG
+        try:
+            new_entities = asyncio.run(
+                self._enrich_entities_with_lightrag(new_entities)
+            )
+        except Exception as e:
+            logger.error(f"Failed to enrich new entities with LightRAG data: {e}")
+            logger.info("Continuing with new entities without LightRAG enrichment")
+
+        # Merge new entities with existing ones
+        for entity in new_entities:
+            # Check if entity already exists (by name and type)
+            existing_entity = self._find_existing_entity(entity, existing_context)
+            if existing_entity:
+                # Update existing entity with new information
+                self._merge_entity(existing_entity, entity)
+            else:
+                # Add new entity
+                existing_context.add_entity(entity)
+
+        # Add new relationships
+        for relationship in new_relationships:
+            existing_context.add_relationship(relationship)
+
+        # Extract new plot points
+        new_plot_points = self._extract_plot_points(input_text)
+        for plot_point in new_plot_points:
+            existing_context.add_plot_point(plot_point)
+
+        return existing_context
+
+    def _find_existing_entity(
+        self, new_entity: Entity, context: StoryContext
+    ) -> Optional[Entity]:
+        """Find an existing entity that matches the new entity."""
+        for existing_entity in context.entities.values():
+            if (
+                existing_entity.name.lower() == new_entity.name.lower()
+                and existing_entity.type == new_entity.type
+            ):
+                return existing_entity
+        return None
+
+    def _merge_entity(self, existing_entity: Entity, new_entity: Entity) -> None:
+        """Merge new entity information into existing entity."""
+        # Update description if new one is more detailed
+        if len(new_entity.description) > len(existing_entity.description):
+            existing_entity.description = new_entity.description
+
+        # Merge properties
+        if new_entity.properties:
+            if existing_entity.properties is None:
+                existing_entity.properties = {}
+            existing_entity.properties.update(new_entity.properties)
+
+        # Update subtype if different
+        if new_entity.subtype != existing_entity.subtype:
+            # Keep the more specific subtype
+            subtype_priority = {
+                "protagonist": 4,
+                "antagonist": 3,
+                "supporting": 2,
+                "animal": 1,
+            }
+            existing_priority = subtype_priority.get(existing_entity.subtype, 0)
+            new_priority = subtype_priority.get(new_entity.subtype, 0)
+            if new_priority > existing_priority:
+                existing_entity.subtype = new_entity.subtype

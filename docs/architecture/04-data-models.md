@@ -74,7 +74,7 @@
 - settings: dict - Genre, tone, length, morals
 - entities: dict - All entities keyed by ID
 - relationships: list - All entity relationships
-- user_inputs: dict - Original user requests
+- user_inputs: dict - All user prompts and requests (preserves complete conversation history)
 - plot_points: list - Key narrative points
 - outline: string - Generated outline content
 - story: string - Generated story content

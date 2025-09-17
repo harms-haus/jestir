@@ -76,9 +76,14 @@ LIGHTRAG_MOCK_MODE=false
 
 ### Basic Commands
 
-Generate context from natural language input:
+Create a new context from natural language input (overwrites existing):
 ```bash
-jestir context "A story about a brave little mouse who saves the forest"
+jestir context new "A story about a brave little mouse who saves the forest"
+```
+
+Update existing context or create new one from natural language input:
+```bash
+jestir context "The antagonist should be a cat who wants to eat the mouse."
 ```
 
 Generate story outline from context:
@@ -96,9 +101,27 @@ jestir write outline.md
 All commands support custom output file names:
 ```bash
 jestir context "story input" --output my-context.yaml
+jestir context new "story input" --output my-context.yaml
 jestir outline context.yaml --output my-outline.md
 jestir write outline.md --output my-story.md
 ```
+
+### Context Management
+
+The `jestir context` command now intelligently manages your story context:
+
+- **If no `context.yaml` exists**: Creates a new context file
+- **If `context.yaml` exists**: Updates the existing context with your new input, merging entities and relationships intelligently
+- **Use `jestir context new`**: Always creates a fresh context file, overwriting any existing one
+
+This allows you to iteratively build and refine your story context through natural language prompts.
+
+**All user prompts are preserved** in the context file, including:
+- Initial story creation prompts
+- Additional context-update prompts
+- All subsequent refinements and modifications
+
+The context maintains a complete history of all your natural language inputs, ensuring that every prompt you provide is captured and can be referenced during story generation.
 
 ## Project Structure
 

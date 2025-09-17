@@ -26,17 +26,52 @@ class TestCLI:
         """Test context command help."""
         result = self.runner.invoke(main, ["context", "--help"])
         assert result.exit_code == 0
-        assert "Generate context from natural language input" in result.output
+        assert (
+            "Update existing context or create new one from natural language input"
+            in result.output
+        )
+
+    def test_context_new_command_help(self):
+        """Test context new command help."""
+        result = self.runner.invoke(main, ["context-new", "--help"])
+        assert result.exit_code == 0
+        assert "Generate a new context from natural language input" in result.output
 
     def test_context_command_basic(self):
-        """Test basic context command execution."""
+        """Test basic context command execution (creates new context when none exists)."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Change to temp directory to avoid finding existing context.yaml
+            original_cwd = os.getcwd()
+            os.chdir(temp_dir)
+            try:
+                output_file = os.path.join(temp_dir, "test_context.yaml")
+
+                result = self.runner.invoke(
+                    main,
+                    [
+                        "context",
+                        "Arthur visits the enchanted forest",
+                        "--output",
+                        output_file,
+                    ],
+                )
+
+                # Should succeed even without OpenAI key (uses fallback)
+                assert result.exit_code == 0
+                assert "Context generated successfully" in result.output
+                assert os.path.exists(output_file)
+            finally:
+                os.chdir(original_cwd)
+
+    def test_context_new_command_basic(self):
+        """Test context new command execution."""
         with tempfile.TemporaryDirectory() as temp_dir:
             output_file = os.path.join(temp_dir, "test_context.yaml")
 
             result = self.runner.invoke(
                 main,
                 [
-                    "context",
+                    "context-new",
                     "Arthur visits the enchanted forest",
                     "--output",
                     output_file,
@@ -72,6 +107,36 @@ class TestCLI:
                 assert "metadata" in content
                 assert "entities" in content
                 assert "relationships" in content
+
+    def test_context_command_updates_existing(self):
+        """Test context command updates existing context file."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create an initial context file
+            initial_context_file = os.path.join(temp_dir, "context.yaml")
+            result1 = self.runner.invoke(
+                main,
+                [
+                    "context",
+                    "Arthur visits the enchanted forest",
+                    "--output",
+                    initial_context_file,
+                ],
+            )
+            assert result1.exit_code == 0
+            assert "Context generated successfully" in result1.output
+
+            # Update the context with new information
+            result2 = self.runner.invoke(
+                main,
+                [
+                    "context",
+                    "Arthur finds a magical sword in the forest",
+                    "--output",
+                    initial_context_file,
+                ],
+            )
+            assert result2.exit_code == 0
+            assert "Context updated successfully" in result2.output
 
     def test_outline_command_help(self):
         """Test outline command help."""

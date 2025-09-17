@@ -135,3 +135,6 @@ output/
 *.md
 !README.md
 !docs/**/*.md
+
+# Security reports
+security-report.json

@@ -12,6 +12,8 @@
 - FR8: The system shall use file-based templates with {{key}} substitution for prompts and content generation
 - FR9: The system shall allow creation of new entities in the context file for the current story
 - FR10: The context system shall maintain complete story memory including settings, entities, relationships, and generation history
+- FR11: The system shall support iterative context building through natural language prompts that update existing contexts
+- FR12: The system shall preserve all user prompts in the context file for complete conversation history
 
 ## Non Functional
 
@@ -24,3 +26,4 @@
 - NFR7: Response time for each generation stage shall be under 30 seconds for typical story complexity
 - NFR8: The system shall support Python 3.8+ for broad compatibility
 - NFR9: The system shall support separate OpenAI API configurations for extraction and creative generation, allowing different models and endpoints
+- NFR10: The context management system shall intelligently determine whether to create new contexts or update existing ones based on file presence

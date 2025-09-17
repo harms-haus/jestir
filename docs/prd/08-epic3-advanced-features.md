@@ -12,7 +12,7 @@ so that I can optimize costs over time.
 
 1. Token counting for each OpenAI API call
 2. Token usage stored in context.yaml per generation stage
-3. Command `story stats` shows token usage summary
+3. Command `jestir stats` shows token usage summary
 4. Cost estimation based on current OpenAI pricing
 5. Weekly/monthly usage reports
 6. Token optimization suggestions based on patterns
@@ -25,7 +25,7 @@ so that I can verify they work correctly.
 
 **Acceptance Criteria:**
 
-1. Command `story template test protagonist.txt --name "Lily"`
+1. Command `jestir template test protagonist.txt --name "Lily"`
 2. Preview shows rendered template with substitutions
 3. Validation catches missing required keys
 4. Dry-run mode for generation without API calls
@@ -71,7 +71,7 @@ so that I can explore different story directions.
 
 **Acceptance Criteria:**
 
-1. Command `story batch --variations 3` generates multiple outlines
+1. Command `jestir batch --variations 3` generates multiple outlines
 2. Parallel processing for independent operations
 3. Variation parameters (tone, length, moral emphasis)
 4. Results comparison in markdown table

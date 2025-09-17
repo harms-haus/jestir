@@ -40,9 +40,9 @@ so that I can reference them in new stories.
 
 **Acceptance Criteria:**
 
-1. Command `story search characters --query "dragon"` returns matches from LightRAG API
-2. Command `story list locations --type interior` shows filtered results
-3. Command `story show character "Lily"` displays full details
+1. Command `jestir search characters --query "dragon"` returns matches from LightRAG API
+2. Command `jestir list locations --type interior` shows filtered results
+3. Command `jestir show character "Lily"` displays full details
 4. Pagination for large result sets
 5. Output in readable table format
 6. Export option to YAML for context file use
@@ -55,7 +55,7 @@ so that I can catch conflicts or missing references early.
 
 **Acceptance Criteria:**
 
-1. Command `story validate context.yaml` checks structure
+1. Command `jestir validate context.yaml` checks structure
 2. Verify all entity references exist in LightRAG API
 3. Check relationship consistency
 4. Validate required settings are present

@@ -33,6 +33,7 @@ The main architectural style is a **Pipeline Architecture** with file-based comm
 - **Service Architecture**: Monolithic CLI with modular components
 - **Data Flow**: Natural Language Input → Context (YAML) → Outline (Markdown) → Story (Markdown)
 - **Key Decision Rationale**: File-based intermediates allow manual editing and parallel story development
+- **Context Management**: Intelligent context updates preserve all user prompts and enable iterative story building
 
 ### High Level Project Diagram
 
@@ -70,6 +71,7 @@ graph TD
 - **Template Method Pattern:** External templates with variable substitution - *Rationale:* Allows prompt modification without code changes
 - **Command Pattern:** CLI commands encapsulate operations - *Rationale:* Supports both high-level and granular operations
 - **Factory Pattern:** Entity creation based on type (character/location/item) - *Rationale:* Standardizes entity creation with type-specific attributes
+- **Strategy Pattern:** Context update vs. creation strategies - *Rationale:* Enables intelligent context management based on existing state
 
 Now, let me detail the technology stack. This is critical for your implementation:
 
@@ -175,7 +177,7 @@ Now, let me detail the technology stack. This is critical for your implementatio
 - settings: dict - Genre, tone, length, morals
 - entities: dict - All entities keyed by ID
 - relationships: list - All entity relationships
-- user_inputs: dict - Original user requests
+- user_inputs: dict - All user prompts and requests (preserves complete history)
 - plot_points: list - Key narrative points
 - outline: string - Generated outline content
 - story: string - Generated story content
@@ -193,7 +195,8 @@ Now, let me detail the technology stack. This is critical for your implementatio
 
 **Key Interfaces:**
 
-- `context` command → ContextGenerator
+- `context` command → ContextGenerator (intelligent update/create)
+- `context new` command → ContextGenerator (always create new)
 - `outline` command → OutlineGenerator
 - `write` command → StoryWriter
 - Search/list commands → EntityRepository
@@ -209,7 +212,9 @@ Now, let me detail the technology stack. This is critical for your implementatio
 
 **Key Interfaces:**
 
-- `generate(input_text: str, existing_context: Optional[StoryContext]) → StoryContext`
+- `generate_context(input_text: str) → StoryContext` - Creates new context from natural language
+- `update_context(input_text: str, existing_context: StoryContext) → StoryContext` - Updates existing context with new input
+- `load_context_from_file(file_path: str) → StoryContext` - Loads existing context from YAML file
 - `extract_entities(text: str) → List[Entity]` - Uses OpenAI AI to parse natural language and identify entities
 - `extract_relationships(text: str, entities: List[Entity]) → List[Relationship]` - Uses OpenAI AI to parse natural language and extract relationships
 
@@ -403,6 +408,35 @@ export OPENAI_CREATIVE_BASE_URL="https://your-creative-endpoint.com/v1"
 export OPENAI_EXTRACTION_TEMPERATURE="0.1"  # Lower for consistent extraction
 export OPENAI_CREATIVE_TEMPERATURE="0.8"    # Higher for more creativity
 ```
+
+## Context Management Strategy
+
+### Intelligent Context Updates
+
+The system implements intelligent context management that automatically determines whether to create a new context or update an existing one:
+
+**Context Update Logic:**
+- If `context.yaml` exists: Load existing context and merge new input
+- If `context.yaml` doesn't exist: Create new context from input
+- All user prompts are preserved in the `user_inputs` dictionary
+- Entity merging intelligently combines new and existing entities
+
+**Command Structure:**
+- `jestir context "description"` - Intelligent update/create based on file presence
+- `jestir context new "description"` - Always create new context (overwrites existing)
+
+**Entity Merging Strategy:**
+- Match entities by name and type (case-insensitive)
+- Update descriptions with more detailed versions
+- Merge properties from new entities into existing ones
+- Preserve existing entity relationships and metadata
+- Use subtype priority for conflicting entity types
+
+**Prompt Preservation:**
+- All user inputs stored with timestamps
+- Complete conversation history maintained
+- Enables iterative story building and refinement
+- Supports context validation and debugging
 
 ## Core Workflows
 
