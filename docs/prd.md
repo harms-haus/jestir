@@ -319,17 +319,17 @@ so that I can match stories to available reading time.
 ### Story 3.4: Web API Preparation
 
 As a developer,
-I want to expose CLI functionality through a Python API,
+I want to expose CLI functionality through a Node.js API,
 so that a future web interface can use it.
 
 **Acceptance Criteria:**
 
-1. Python module with public API for all CLI commands
-2. Async support for long-running operations
+1. Node.js module with public API for all CLI commands
+2. Async/await support for long-running operations
 3. Progress callbacks for generation stages
 4. Error handling returns structured responses
 5. Session management for parallel story generation
-6. Comprehensive docstrings for API methods
+6. Comprehensive JSDoc documentation for API methods
 7. Unit tests for API layer
 
 ### Story 3.5: Batch Operations Support
