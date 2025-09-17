@@ -8,7 +8,7 @@ import pytest
 import yaml
 from click.testing import CliRunner
 
-from src.jestir.cli import main
+from jestir.cli import main
 
 
 class TestTokenTrackingCLI:

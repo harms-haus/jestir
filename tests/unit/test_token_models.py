@@ -2,7 +2,7 @@
 
 from datetime import datetime, timedelta
 
-from src.jestir.models.token_usage import (
+from jestir.models.token_usage import (
     TokenOptimizationSuggestion,
     TokenPricing,
     TokenUsage,

@@ -5,7 +5,7 @@ import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from src.jestir.services.token_tracker import TokenTracker
+from jestir.services.token_tracker import TokenTracker
 
 
 class TestTokenTrackerPerformance:

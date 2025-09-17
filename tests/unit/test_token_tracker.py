@@ -8,11 +8,11 @@ from unittest.mock import patch
 
 import yaml
 
-from src.jestir.models.token_usage import (
+from jestir.models.token_usage import (
     TokenPricing,
     TokenUsageSummary,
 )
-from src.jestir.services.token_tracker import TokenTracker
+from jestir.services.token_tracker import TokenTracker
 
 
 class TestTokenTracker:
@@ -641,7 +641,7 @@ class TestTokenTracker:
 
         # Should group all days into one week
         assert len(summary.weekly_usage) == 1
-        week_key = list(summary.weekly_usage.keys())[0]
+        week_key = next(iter(summary.weekly_usage.keys()))
         assert "2024-W02" in week_key  # Week 2 of 2024 (Jan 15 is in week 2)
 
     def test_monthly_usage_grouping(self):
@@ -658,7 +658,7 @@ class TestTokenTracker:
 
         # Should group all days into one month
         assert len(summary.monthly_usage) == 1
-        month_key = list(summary.monthly_usage.keys())[0]
+        month_key = next(iter(summary.monthly_usage.keys()))
         assert month_key == "2024-01"
 
     def test_daily_usage_grouping(self):

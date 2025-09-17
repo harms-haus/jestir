@@ -1,0 +1,80 @@
+# Jestir Development Workflow Rules
+
+## Post-Task Automation
+
+After completing any development task, automatically run:
+
+```bash
+make check-all
+```
+
+This command runs:
+1. **Linting** (`make lint`) - Ruff checks on src/ directory
+2. **Formatting** (`make format`) - Ruff formatting on src/ directory
+3. **Type Checking** (`make type-check`) - MyPy type checking on src/ directory
+4. **Testing** (`make test`) - All tests
+
+## Pre-commit Configuration
+
+- Pre-commit hooks are configured to only check `src/` directory
+- This prevents issues with test files and documentation
+- Run `make pre-commit-src` to test pre-commit on src/ only
+
+## Development Commands
+
+```bash
+# Quick development checks
+make dev-check      # Lint + format + type-check
+make ci-check       # Lint + type-check + test (for CI)
+
+# Individual checks
+make lint           # Ruff linting
+make format         # Ruff formatting
+make type-check     # MyPy type checking
+make test           # Run tests
+
+# Setup and maintenance
+make install        # Install dependencies
+make dev-setup      # Complete setup with pre-commit
+make clean          # Clean caches and temp files
+```
+
+## Workflow Script
+
+Use the automated workflow script for more control:
+
+```bash
+# Run all checks
+./scripts/dev-workflow.sh all
+
+# Run specific checks
+./scripts/dev-workflow.sh lint
+./scripts/dev-workflow.sh type-check
+./scripts/dev-workflow.sh test
+
+# With options
+./scripts/dev-workflow.sh --verbose all
+./scripts/dev-workflow.sh --fix lint
+```
+
+## Configuration Files
+
+- `.pre-commit-config.yaml` - Pre-commit hooks (src/ only)
+- `pyproject.toml` - MyPy configuration with proper module paths
+- `Makefile` - Development commands
+- `scripts/dev-workflow.sh` - Automated workflow script
+
+## Common Issues Resolved
+
+- ✅ MyPy type errors (16 errors in token_tracker.py)
+- ✅ Ruff linting issues (A002, RUF012)
+- ✅ Import errors in tests (src.jestir → jestir)
+- ✅ Pre-commit scope limited to src/ directory
+- ✅ Module path conflicts resolved
+
+## Integration with Cursor
+
+- Use `make check-all` after completing tasks
+- Pre-commit hooks run automatically on git commit
+- All checks scoped to `src/` directory to avoid false positives
+- Cursor memories configured for automated workflow
