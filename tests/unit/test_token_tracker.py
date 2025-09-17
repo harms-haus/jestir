@@ -2,7 +2,7 @@
 
 import json
 import tempfile
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -383,10 +383,10 @@ class TestTokenTracker:
 
         # Add usage with specific timestamp
         usage = tracker.track_usage("test", "test", "gpt-4o-mini", 100, 50)
-        usage.timestamp = datetime(2024, 1, 15)
+        usage.timestamp = datetime(2024, 1, 15, tzinfo=timezone.utc)
 
-        start_date = datetime(2024, 1, 1)
-        end_date = datetime(2024, 1, 31)
+        start_date = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        end_date = datetime(2024, 1, 31, tzinfo=timezone.utc)
 
         report = tracker.generate_report(
             period="monthly",
@@ -632,7 +632,7 @@ class TestTokenTracker:
         tracker = TokenTracker()
 
         # Add usage on different days of the same week
-        base_date = datetime(2024, 1, 15)  # Monday
+        base_date = datetime(2024, 1, 15, tzinfo=timezone.utc)  # Monday
         for i in range(7):  # Monday to Sunday
             usage = tracker.track_usage("test", "test", "gpt-4o-mini", 100, 50)
             usage.timestamp = base_date + timedelta(days=i)
@@ -649,7 +649,7 @@ class TestTokenTracker:
         tracker = TokenTracker()
 
         # Add usage on different days of the same month
-        base_date = datetime(2024, 1, 15)
+        base_date = datetime(2024, 1, 15, tzinfo=timezone.utc)
         for i in range(10):
             usage = tracker.track_usage("test", "test", "gpt-4o-mini", 100, 50)
             usage.timestamp = base_date + timedelta(days=i)
@@ -666,7 +666,7 @@ class TestTokenTracker:
         tracker = TokenTracker()
 
         # Add usage on different days
-        base_date = datetime(2024, 1, 15)
+        base_date = datetime(2024, 1, 15, tzinfo=timezone.utc)
         for i in range(3):
             usage = tracker.track_usage("test", "test", "gpt-4o-mini", 100, 50)
             usage.timestamp = base_date + timedelta(days=i)

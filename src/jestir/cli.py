@@ -1391,6 +1391,485 @@ def fuzzy(name, entity_type):
 
 
 @main.command()
+@click.argument("template_path")
+@click.option("--name", "-n", help="Name for template substitution")
+@click.option("--context", "-c", help="Context file to load variables from")
+@click.option(
+    "--dry-run",
+    "-d",
+    is_flag=True,
+    help="Preview template without making API calls",
+)
+@click.option(
+    "--validate",
+    "-v",
+    is_flag=True,
+    help="Validate template syntax and required variables",
+)
+@click.option("--debug", is_flag=True, help="Show detailed debugging information")
+@click.pass_context
+def template(ctx, template_path, name, context, dry_run, validate, debug):
+    """Test and preview templates with variable substitution."""
+    logger = get_logger("cli.template")
+    log_command_start(
+        "template",
+        {
+            "template_path": template_path,
+            "name": name,
+            "context": context,
+            "dry_run": dry_run,
+            "validate": validate,
+            "debug": debug,
+        },
+        logger,
+    )
+
+    try:
+        logger.debug(f"Testing template: {template_path}")
+        click.echo(f"Testing template: {template_path}")
+
+        # Load template loader
+        loader = TemplateLoader()
+
+        # Validate template syntax if requested
+        if validate:
+            logger.debug("Validating template syntax")
+            click.echo("Validating template syntax...")
+
+            try:
+                # Use enhanced validation
+                validation_result = loader.validate_template_syntax(template_path)
+
+                if validation_result["valid"]:
+                    click.echo("✅ Template syntax is valid")
+
+                    # Show variable information
+                    if validation_result["variables"]:
+                        click.echo(
+                            f"Found {len(validation_result['variables'])} template variables:",
+                        )
+                        for var in validation_result["variables"]:
+                            var_info = f"  • {var['name']}"
+                            if var["has_documentation"]:
+                                var_info += f" # {var['documentation']}"
+                            click.echo(var_info)
+                    else:
+                        click.echo("No template variables found")
+
+                    # Show warnings if any
+                    if validation_result["warnings"]:
+                        click.echo(
+                            f"\n⚠️  {len(validation_result['warnings'])} warnings:",
+                        )
+                        for warning in validation_result["warnings"]:
+                            click.echo(f"  • {warning}")
+
+                    # Show template stats
+                    click.echo("\n📊 Template Statistics:")
+                    click.echo(
+                        f"  Length: {validation_result['template_length']} characters",
+                    )
+                    click.echo(f"  Lines: {validation_result['line_count']}")
+                    click.echo(f"  Variables: {validation_result['variable_count']}")
+
+                else:
+                    click.echo("❌ Template syntax errors found:")
+                    for error in validation_result["syntax_errors"]:
+                        click.echo(f"  • {error}")
+
+                    if validation_result["warnings"]:
+                        click.echo(
+                            f"\n⚠️  {len(validation_result['warnings'])} warnings:",
+                        )
+                        for warning in validation_result["warnings"]:
+                            click.echo(f"  • {warning}")
+
+                    log_command_end("template", success=False, logger=logger)
+                    raise click.Abort()
+
+            except Exception as e:
+                click.echo(f"❌ Template validation error: {e}")
+                log_command_end("template", success=False, logger=logger)
+                raise click.Abort()
+
+        # Load context variables if provided
+        context_vars = {}
+        if context:
+            logger.debug(f"Loading context from: {context}")
+            click.echo(f"Loading context from: {context}")
+
+            try:
+                import yaml
+
+                with open(context, encoding="utf-8") as f:
+                    context_data = yaml.safe_load(f)
+
+                # Extract relevant variables for template substitution
+                if isinstance(context_data, dict):
+                    # Extract entities, relationships, plot_points, etc.
+                    if "entities" in context_data:
+                        for entity in context_data["entities"]:
+                            if "name" in entity:
+                                context_vars[
+                                    entity["name"].lower().replace(" ", "_")
+                                ] = entity["name"]
+                                if "description" in entity:
+                                    context_vars[
+                                        f"{entity['name'].lower().replace(' ', '_')}_description"
+                                    ] = entity["description"]
+
+                    # Add other common variables
+                    for key in ["genre", "tone", "length", "age_appropriate", "morals"]:
+                        if key in context_data:
+                            context_vars[key] = context_data[key]
+
+                click.echo(f"Loaded {len(context_vars)} variables from context")
+
+            except Exception as e:
+                click.echo(f"Warning: Could not load context file: {e}")
+                logger.warning(f"Context loading failed: {e}")
+
+        # Add name parameter if provided
+        if name:
+            context_vars["name"] = name
+            context_vars["protagonist"] = name
+            context_vars["character"] = name
+
+        # Add some default test variables if none provided
+        if not context_vars:
+            context_vars = {
+                "name": name or "Test Character",
+                "protagonist": name or "Test Character",
+                "character": name or "Test Character",
+                "genre": "adventure",
+                "tone": "friendly",
+                "length": "short",
+                "age_appropriate": "5-8 years",
+                "morals": "friendship and courage",
+            }
+            click.echo("Using default test variables")
+
+        # Validate template with context if we have context variables
+        if context_vars:
+            logger.debug("Validating template with context")
+            click.echo("Validating template with context...")
+
+            try:
+                # Use enhanced context validation
+                context_validation = loader.validate_template_with_context(
+                    template_path,
+                    context_vars,
+                )
+
+                if context_validation["valid"]:
+                    click.echo("✅ Template context validation passed")
+                    coverage = context_validation["overall_coverage"]
+                    click.echo(f"Context coverage: {coverage:.1%}")
+                else:
+                    click.echo("⚠️  Template context validation issues:")
+
+                    if context_validation["context_validation"]["missing_in_context"]:
+                        missing = context_validation["context_validation"][
+                            "missing_in_context"
+                        ]
+                        click.echo(f"  Missing variables: {', '.join(missing)}")
+
+                    if context_validation["context_validation"]["rendering_errors"]:
+                        for error in context_validation["context_validation"][
+                            "rendering_errors"
+                        ]:
+                            click.echo(f"  • {error}")
+
+                    if context_validation["context_validation"]["extra_in_context"]:
+                        extra = context_validation["context_validation"][
+                            "extra_in_context"
+                        ]
+                        click.echo(f"  Extra variables (not used): {', '.join(extra)}")
+
+            except Exception as e:
+                click.echo(f"Warning: Context validation failed: {e}")
+                logger.warning(f"Context validation failed: {e}")
+
+        # Render template with context
+        logger.debug(f"Rendering template with {len(context_vars)} variables")
+        click.echo(f"Rendering template with {len(context_vars)} variables...")
+
+        try:
+            rendered_content = loader.render_template(template_path, context_vars)
+
+            # Show preview
+            click.echo("\n📝 Template Preview:")
+            click.echo("=" * 50)
+            click.echo(rendered_content)
+            click.echo("=" * 50)
+
+            # Show variable substitutions if debug mode
+            if debug:
+                click.echo("\n🔍 Variable Substitutions:")
+                click.echo("-" * 30)
+                for var, value in context_vars.items():
+                    click.echo(f"{var}: {value}")
+
+            # Check for unresolved variables
+            import re
+
+            pattern = r"\{\{([^}]+)\}\}"
+            unresolved = re.findall(pattern, rendered_content)
+            if unresolved:
+                click.echo(f"\n⚠️  Warning: {len(unresolved)} unresolved variables:")
+                for var in unresolved:
+                    click.echo(f"  • {var}")
+            else:
+                click.echo("\n✅ All variables resolved successfully")
+
+        except Exception as e:
+            click.echo(f"❌ Template rendering error: {e}")
+            log_command_end("template", success=False, logger=logger)
+            raise click.Abort()
+
+        # Dry run mode message
+        if dry_run:
+            click.echo("\n🔍 Dry run mode - no API calls made")
+            click.echo("Template is ready for use in story generation")
+
+        logger.info("Template test completed successfully")
+        click.echo("\n✅ Template test completed successfully!")
+        log_command_end("template", success=True, logger=logger)
+
+    except FileNotFoundError as e:
+        logger.error(f"Template file not found: {e}")
+        click.echo(f"❌ Template Not Found: {e!s}", err=True)
+        click.echo("💡 Troubleshooting:", err=True)
+        click.echo(f"   • Check that template file '{template_path}' exists", err=True)
+        click.echo("   • Verify the file path is correct", err=True)
+        click.echo(
+            "   • Use 'jestir validate-templates' to see available templates",
+            err=True,
+        )
+        log_command_end("template", success=False, logger=logger)
+        raise click.Abort()
+    except PermissionError as e:
+        logger.error(f"Permission error: {e}")
+        click.echo(f"❌ Permission Error: Cannot read template file - {e!s}", err=True)
+        click.echo("💡 Tip: Check file permissions", err=True)
+        log_command_end("template", success=False, logger=logger)
+        raise click.Abort()
+    except Exception as e:
+        logger.exception("Unexpected error in template command")
+        click.echo(f"❌ Template Error: {e!s}", err=True)
+        click.echo("💡 Troubleshooting:", err=True)
+        click.echo("   • Check template syntax and file format", err=True)
+        click.echo("   • Verify all required variables are provided", err=True)
+        click.echo("   • Use --debug flag for detailed information", err=True)
+        log_command_end("template", success=False, logger=logger)
+        raise click.Abort()
+
+
+@main.command()
+@click.argument("template_path")
+@click.option("--context", "-c", help="Context file to load variables from")
+@click.option(
+    "--analyze",
+    "-a",
+    is_flag=True,
+    help="Perform comprehensive template analysis",
+)
+@click.option("--performance", "-p", is_flag=True, help="Show performance metrics")
+@click.option("--compare", help="Compare with other template files (comma-separated)")
+@click.pass_context
+def debug_template(ctx, template_path, context, analyze, performance, compare):
+    """Debug and analyze templates with detailed information."""
+    logger = get_logger("cli.debug_template")
+    log_command_start(
+        "debug_template",
+        {
+            "template_path": template_path,
+            "context": context,
+            "analyze": analyze,
+            "performance": performance,
+            "compare": compare,
+        },
+        logger,
+    )
+
+    try:
+        logger.debug(f"Debugging template: {template_path}")
+        click.echo(f"Debugging template: {template_path}")
+
+        # Import template debugger
+        from .services.template_debugger import TemplateDebugger
+
+        # Load template loader and debugger
+        loader = TemplateLoader()
+        debugger = TemplateDebugger(loader)
+
+        # Load context if provided
+        context_vars = {}
+        if context:
+            logger.debug(f"Loading context from: {context}")
+            click.echo(f"Loading context from: {context}")
+
+            try:
+                import yaml
+
+                with open(context, encoding="utf-8") as f:
+                    context_data = yaml.safe_load(f)
+
+                # Extract relevant variables
+                if isinstance(context_data, dict):
+                    if "entities" in context_data:
+                        for entity in context_data["entities"]:
+                            if "name" in entity:
+                                context_vars[
+                                    entity["name"].lower().replace(" ", "_")
+                                ] = entity["name"]
+                                if "description" in entity:
+                                    context_vars[
+                                        f"{entity['name'].lower().replace(' ', '_')}_description"
+                                    ] = entity["description"]
+
+                    for key in ["genre", "tone", "length", "age_appropriate", "morals"]:
+                        if key in context_data:
+                            context_vars[key] = context_data[key]
+
+                click.echo(f"Loaded {len(context_vars)} variables from context")
+
+            except Exception as e:
+                click.echo(f"Warning: Could not load context file: {e}")
+                logger.warning(f"Context loading failed: {e}")
+
+        # Perform comprehensive analysis if requested
+        if analyze:
+            logger.debug("Performing comprehensive template analysis")
+            click.echo("Performing comprehensive template analysis...")
+
+            analysis = debugger.analyze_template(template_path)
+
+            click.echo("\n📊 Template Analysis Results:")
+            click.echo("=" * 50)
+            click.echo(f"Template: {analysis.template_path}")
+            click.echo(f"Analysis Time: {analysis.analysis_time:.3f}s")
+            click.echo(f"Variable Count: {analysis.variable_count}")
+            click.echo(f"Complexity Score: {analysis.complexity_score:.1f}/100")
+
+            # Performance metrics
+            if performance or analyze:
+                click.echo("\n⚡ Performance Metrics:")
+                click.echo("-" * 30)
+                metrics = analysis.performance_metrics
+                click.echo(
+                    f"Template Size: {metrics.get('template_size_bytes', 0):,} bytes",
+                )
+                click.echo(f"Line Count: {metrics.get('line_count', 0)}")
+                click.echo(
+                    f"Documentation Coverage: {metrics.get('documentation_coverage', 0):.1%}",
+                )
+                click.echo(
+                    f"Repeated Variables: {metrics.get('repeated_variables', 0)}",
+                )
+                click.echo(
+                    f"Est. Rendering Time: {metrics.get('estimated_rendering_time_ms', 0):.1f}ms",
+                )
+
+            # Potential issues
+            if analysis.potential_issues:
+                click.echo(f"\n⚠️  Potential Issues ({len(analysis.potential_issues)}):")
+                click.echo("-" * 30)
+                for issue in analysis.potential_issues:
+                    click.echo(f"  • {issue}")
+            else:
+                click.echo("\n✅ No potential issues found")
+
+            # Recommendations
+            if analysis.recommendations:
+                click.echo(f"\n💡 Recommendations ({len(analysis.recommendations)}):")
+                click.echo("-" * 30)
+                for rec in analysis.recommendations:
+                    click.echo(f"  • {rec}")
+
+        # Debug rendering if context provided
+        if context_vars:
+            logger.debug("Debugging template rendering")
+            click.echo("\n🔍 Rendering Debug:")
+            click.echo("-" * 20)
+
+            debug_result = debugger.debug_template_rendering(
+                template_path,
+                context_vars,
+            )
+
+            if debug_result["success"]:
+                click.echo("✅ Rendering successful")
+                click.echo(f"Rendering Time: {debug_result['rendering_time_ms']:.1f}ms")
+                click.echo(
+                    f"Rendered Length: {debug_result['rendered_length']:,} characters",
+                )
+                click.echo(f"Context Coverage: {debug_result['context_coverage']:.1%}")
+                click.echo(
+                    f"Variables Used: {debug_result['variables_used']}/{debug_result['variables_total']}",
+                )
+                click.echo(
+                    f"Performance Score: {debug_result['performance_score']:.1f}/100",
+                )
+
+                if debug_result["unresolved_variables"]:
+                    click.echo(
+                        f"Unresolved Variables: {', '.join(debug_result['unresolved_variables'])}",
+                    )
+            else:
+                click.echo(f"❌ Rendering failed: {debug_result['error']}")
+
+        # Compare templates if requested
+        if compare:
+            logger.debug(f"Comparing templates: {compare}")
+            click.echo("\n🔄 Template Comparison:")
+            click.echo("-" * 30)
+
+            template_paths = [template_path] + [p.strip() for p in compare.split(",")]
+            comparison = debugger.compare_templates(template_paths)
+
+            click.echo(f"Templates Compared: {comparison['template_count']}")
+            click.echo(
+                f"Average Complexity: {comparison['average_complexity']:.1f}/100",
+            )
+            click.echo(f"Total Variables: {comparison['total_variables']}")
+
+            if comparison["common_issues"]:
+                click.echo(
+                    f"Common Issues: {', '.join(comparison['common_issues'][:3])}",
+                )
+
+            if comparison["performance_comparison"]:
+                perf = comparison["performance_comparison"]
+                click.echo(
+                    f"Size Range: {perf['size_range'][0]:,} - {perf['size_range'][1]:,} bytes",
+                )
+                click.echo(f"Most Complex: {perf['most_complex']}")
+                click.echo(f"Most Variables: {perf['most_variables']}")
+
+        logger.info("Template debugging completed successfully")
+        click.echo("\n✅ Template debugging completed successfully!")
+        log_command_end("debug_template", success=True, logger=logger)
+
+    except FileNotFoundError as e:
+        logger.error(f"Template file not found: {e}")
+        click.echo(f"❌ Template Not Found: {e!s}", err=True)
+        click.echo("💡 Troubleshooting:", err=True)
+        click.echo(f"   • Check that template file '{template_path}' exists", err=True)
+        click.echo("   • Verify the file path is correct", err=True)
+        log_command_end("debug_template", success=False, logger=logger)
+        raise click.Abort()
+    except Exception as e:
+        logger.exception("Unexpected error in debug_template command")
+        click.echo(f"❌ Debug Error: {e!s}", err=True)
+        click.echo("💡 Troubleshooting:", err=True)
+        click.echo("   • Check template syntax and file format", err=True)
+        click.echo("   • Verify all required variables are provided", err=True)
+        log_command_end("debug_template", success=False, logger=logger)
+        raise click.Abort()
+
+
+@main.command()
 @click.option("--context", "-c", default="context.yaml", help="Context file to analyze")
 @click.option(
     "--period",
@@ -1547,6 +2026,184 @@ def stats(ctx, context, period, output_format, export, suggestions):
             err=True,
         )
         log_command_end("stats", success=False, logger=logger)
+        raise click.Abort()
+
+
+@main.command()
+@click.option("--template", "-t", help="Show metrics for specific template")
+@click.option("--export", "-e", help="Export metrics to JSON file")
+@click.option("--clear", is_flag=True, help="Clear all stored metrics")
+@click.pass_context
+def monitor(ctx, template, export, clear):
+    """Show template processing performance metrics and monitoring data."""
+    logger = get_logger("cli.monitor")
+    log_command_start(
+        "monitor",
+        {"template": template, "export": export, "clear": clear},
+        logger,
+    )
+
+    try:
+        from .services.template_monitor import get_global_monitor
+
+        monitor = get_global_monitor()
+
+        if clear:
+            logger.debug("Clearing all template metrics")
+            click.echo("Clearing all template processing metrics...")
+            monitor.clear_metrics()
+            click.echo("✅ All metrics cleared successfully!")
+            log_command_end("monitor", success=True, logger=logger)
+            return
+
+        if export:
+            logger.debug(f"Exporting metrics to {export}")
+            click.echo(f"Exporting metrics to {export}...")
+            monitor.export_metrics(export)
+            click.echo(f"✅ Metrics exported to {export}")
+            log_command_end("monitor", success=True, logger=logger)
+            return
+
+        if template:
+            logger.debug(f"Showing metrics for template: {template}")
+            click.echo(f"Template Performance Metrics: {template}")
+            click.echo("=" * 50)
+
+            metrics = monitor.get_template_performance(template)
+
+            if metrics["status"] == "no_data":
+                click.echo(f"❌ No metrics found for template: {template}")
+                click.echo("💡 Try processing some templates first to generate metrics")
+            else:
+                click.echo(f"Status: {metrics['status']}")
+                click.echo(f"Total Metrics: {metrics['total_metrics']}")
+                click.echo(f"Success Rate: {metrics['success_rate']:.1%}")
+                click.echo(
+                    f"Average Processing Time: {metrics['average_processing_time_ms']:.1f}ms",
+                )
+                click.echo(
+                    f"Average Template Size: {metrics['average_template_size_bytes']:,} bytes",
+                )
+                click.echo(
+                    f"Average Variables: {metrics['average_variable_count']:.1f}",
+                )
+                click.echo(f"Performance Trend: {metrics['performance_trend']}")
+                click.echo(f"Error Rate: {metrics['error_rate']:.1%}")
+        else:
+            logger.debug("Showing overall performance summary")
+            click.echo("Template Processing Performance Summary")
+            click.echo("=" * 50)
+
+            summary = monitor.get_performance_summary()
+
+            if summary["status"] == "no_data":
+                click.echo("❌ No metrics recorded yet")
+                click.echo("💡 Process some templates to generate performance data")
+            else:
+                click.echo(f"Overall Status: {summary['status']}")
+                click.echo(f"Total Metrics: {summary['total_metrics']}")
+                click.echo(f"Success Rate: {summary['success_rate']:.1%}")
+                click.echo(
+                    f"Average Processing Time: {summary['average_processing_time_ms']:.1f}ms",
+                )
+                click.echo(
+                    f"Average Template Size: {summary['average_template_size_bytes']:,} bytes",
+                )
+                click.echo(
+                    f"Average Variables: {summary['average_variable_count']:.1f}",
+                )
+
+                if summary["performance_issues"]:
+                    click.echo("\n⚠️  Performance Issues:")
+                    for issue in summary["performance_issues"]:
+                        click.echo(f"   • {issue}")
+                else:
+                    click.echo("\n✅ No performance issues detected")
+
+                if summary["error_counts"]:
+                    click.echo("\n📊 Error Summary:")
+                    for error_type, count in summary["error_counts"].items():
+                        click.echo(f"   • {error_type}: {count}")
+
+        log_command_end("monitor", success=True, logger=logger)
+
+    except ImportError:
+        logger.error("Template monitoring not available")
+        click.echo("❌ Template monitoring not available", err=True)
+        click.echo("💡 Check that template_monitor.py is properly installed", err=True)
+        log_command_end("monitor", success=False, logger=logger)
+        raise click.Abort()
+    except Exception as e:
+        logger.exception("Unexpected error in monitor command")
+        click.echo(f"❌ Monitor Error: {e!s}", err=True)
+        click.echo("💡 Check that template processing is working correctly", err=True)
+        log_command_end("monitor", success=False, logger=logger)
+        raise click.Abort()
+
+
+@main.command()
+@click.option("--export", "-e", help="Export error analysis to JSON file")
+@click.pass_context
+def errors(ctx, export):
+    """Show detailed error analysis for template processing."""
+    logger = get_logger("cli.errors")
+    log_command_start("errors", {"export": export}, logger)
+
+    try:
+        from .services.template_monitor import get_global_monitor
+
+        monitor = get_global_monitor()
+
+        click.echo("Template Processing Error Analysis")
+        click.echo("=" * 50)
+
+        error_analysis = monitor.get_error_analysis()
+
+        if error_analysis["status"] == "no_data":
+            click.echo("❌ No metrics recorded yet")
+            click.echo("💡 Process some templates to generate error data")
+        elif error_analysis["status"] == "healthy":
+            click.echo("✅ No errors in recent processing")
+            click.echo(f"Total Metrics: {error_analysis['total_metrics']}")
+            click.echo(f"Error Rate: {error_analysis['error_rate']:.1%}")
+        else:
+            click.echo(f"Status: {error_analysis['status']}")
+            click.echo(f"Total Metrics: {error_analysis['total_metrics']}")
+            click.echo(f"Failed Metrics: {error_analysis['failed_metrics']}")
+            click.echo(f"Error Rate: {error_analysis['error_rate']:.1%}")
+
+            if error_analysis["most_common_errors"]:
+                click.echo("\n🔍 Most Common Errors:")
+                for error_type, count in error_analysis["most_common_errors"]:
+                    click.echo(f"   • {error_type}: {count}")
+
+            if error_analysis["most_problematic_templates"]:
+                click.echo("\n⚠️  Most Problematic Templates:")
+                for template, count in error_analysis["most_problematic_templates"]:
+                    click.echo(f"   • {template}: {count} errors")
+
+        if export:
+            logger.debug(f"Exporting error analysis to {export}")
+            click.echo(f"\nExporting error analysis to {export}...")
+            import json
+
+            with open(export, "w") as f:
+                json.dump(error_analysis, f, indent=2)
+            click.echo(f"✅ Error analysis exported to {export}")
+
+        log_command_end("errors", success=True, logger=logger)
+
+    except ImportError:
+        logger.error("Template monitoring not available")
+        click.echo("❌ Template monitoring not available", err=True)
+        click.echo("💡 Check that template_monitor.py is properly installed", err=True)
+        log_command_end("errors", success=False, logger=logger)
+        raise click.Abort()
+    except Exception as e:
+        logger.exception("Unexpected error in errors command")
+        click.echo(f"❌ Error Analysis Error: {e!s}", err=True)
+        click.echo("💡 Check that template processing is working correctly", err=True)
+        log_command_end("errors", success=False, logger=logger)
         raise click.Abort()
 
 

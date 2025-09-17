@@ -1,6 +1,6 @@
 """Tests for token usage models."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from jestir.models.token_usage import (
     TokenOptimizationSuggestion,
@@ -330,8 +330,8 @@ class TestTokenUsageReport:
 
         report = TokenUsageReport(
             period="monthly",
-            start_date=datetime(2024, 1, 1),
-            end_date=datetime(2024, 1, 31),
+            start_date=datetime(2024, 1, 1, tzinfo=timezone.utc),
+            end_date=datetime(2024, 1, 31, tzinfo=timezone.utc),
             summary=summary,
             top_operations=[{"operation": "op1", "total_tokens": 500}],
             cost_trends=[{"month": "2024-01", "cost": 2.50}],
@@ -340,8 +340,8 @@ class TestTokenUsageReport:
         )
 
         assert report.period == "monthly"
-        assert report.start_date == datetime(2024, 1, 1)
-        assert report.end_date == datetime(2024, 1, 31)
+        assert report.start_date == datetime(2024, 1, 1, tzinfo=timezone.utc)
+        assert report.end_date == datetime(2024, 1, 31, tzinfo=timezone.utc)
         assert report.summary.total_tokens == 1000
         assert len(report.top_operations) == 1
         assert len(report.cost_trends) == 1
@@ -421,8 +421,8 @@ class TestTokenUsageReport:
 
         report = TokenUsageReport(
             period="monthly",
-            start_date=datetime(2024, 1, 1),
-            end_date=datetime(2024, 1, 31),
+            start_date=datetime(2024, 1, 1, tzinfo=timezone.utc),
+            end_date=datetime(2024, 1, 31, tzinfo=timezone.utc),
             summary=summary,
             top_operations=top_operations,
             cost_trends=cost_trends,
@@ -448,8 +448,8 @@ class TestTokenUsageReport:
         # Test with valid data
         report = TokenUsageReport(
             period="weekly",
-            start_date=datetime(2024, 1, 1),
-            end_date=datetime(2024, 1, 7),
+            start_date=datetime(2024, 1, 1, tzinfo=timezone.utc),
+            end_date=datetime(2024, 1, 7, tzinfo=timezone.utc),
             summary=summary,
             top_operations=[{"operation": "test", "total_tokens": 100}],
             cost_trends=[{"week": "2024-W01", "cost": 1.0}],
@@ -592,8 +592,8 @@ class TestModelSerialization:
 
         report = TokenUsageReport(
             period="monthly",
-            start_date=datetime(2024, 1, 1),
-            end_date=datetime(2024, 1, 31),
+            start_date=datetime(2024, 1, 1, tzinfo=timezone.utc),
+            end_date=datetime(2024, 1, 31, tzinfo=timezone.utc),
             summary=summary,
             top_operations=[{"operation": "op1", "total_tokens": 500}],
             cost_trends=[{"month": "2024-01", "cost": 2.50}],

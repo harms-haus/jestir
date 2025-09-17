@@ -2,7 +2,7 @@
 
 import tempfile
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from jestir.services.token_tracker import TokenTracker
@@ -79,7 +79,7 @@ class TestTokenTrackerPerformance:
         tracker = TokenTracker()
 
         # Add usage data over 365 days
-        base_date = datetime(2023, 1, 1)
+        base_date = datetime(2023, 1, 1, tzinfo=timezone.utc)
         for i in range(365):
             usage = tracker.track_usage(
                 service="test_service",
@@ -95,20 +95,20 @@ class TestTokenTrackerPerformance:
 
         # Filter by year
         year_summary = tracker.get_usage_summary(
-            start_date=datetime(2023, 1, 1),
-            end_date=datetime(2023, 12, 31),
+            start_date=datetime(2023, 1, 1, tzinfo=timezone.utc),
+            end_date=datetime(2023, 12, 31, tzinfo=timezone.utc),
         )
 
         # Filter by month
         month_summary = tracker.get_usage_summary(
-            start_date=datetime(2023, 6, 1),
-            end_date=datetime(2023, 6, 30),
+            start_date=datetime(2023, 6, 1, tzinfo=timezone.utc),
+            end_date=datetime(2023, 6, 30, tzinfo=timezone.utc),
         )
 
         # Filter by week
         week_summary = tracker.get_usage_summary(
-            start_date=datetime(2023, 6, 1),
-            end_date=datetime(2023, 6, 7),
+            start_date=datetime(2023, 6, 1, tzinfo=timezone.utc),
+            end_date=datetime(2023, 6, 7, tzinfo=timezone.utc),
         )
 
         filter_time = time.time() - start_time
@@ -341,7 +341,7 @@ class TestTokenTrackerPerformance:
         tracker = TokenTracker()
 
         # Add usage data over 2 years
-        base_date = datetime(2022, 1, 1)
+        base_date = datetime(2022, 1, 1, tzinfo=timezone.utc)
         for i in range(730):  # 2 years
             usage = tracker.track_usage(
                 service="test_service",

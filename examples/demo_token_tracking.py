@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Demo script showing token usage tracking functionality."""
 
-import os
 import sys
 from pathlib import Path
 
@@ -140,8 +139,9 @@ def demo_token_tracking():
 
     # Clean up demo files
     for file in [context_file, report_file]:
-        if os.path.exists(file):
-            os.remove(file)
+        file_path = Path(file)
+        if file_path.exists():
+            file_path.unlink()
             print(f"🧹 Cleaned up {file}")
 
 
