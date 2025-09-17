@@ -3,10 +3,14 @@
 import click
 import yaml
 import os
+import asyncio
+import json
 from pathlib import Path
 from .services.context_generator import ContextGenerator
 from .services.outline_generator import OutlineGenerator
 from .services.story_writer import StoryWriter
+from .services.lightrag_client import LightRAGClient
+from .models.api_config import LightRAGAPIConfig
 
 
 @click.group()
@@ -167,6 +171,224 @@ def write(outline_file, output, context):
         raise click.Abort()
     except Exception as e:
         click.echo(f"Error generating story: {str(e)}", err=True)
+        raise click.Abort()
+
+
+@main.group()
+def lightrag():
+    """LightRAG API testing and validation commands."""
+    pass
+
+
+@lightrag.command()
+@click.option("--base-url", default=None, help="LightRAG API base URL")
+@click.option("--api-key", default=None, help="LightRAG API key")
+@click.option("--timeout", default=30, help="Request timeout in seconds")
+def test(base_url, api_key, timeout):
+    """Test LightRAG API connectivity and configuration."""
+    try:
+        click.echo("Testing LightRAG API connectivity...")
+
+        # Create configuration
+        config = LightRAGAPIConfig(
+            base_url=base_url
+            or os.getenv("LIGHTRAG_BASE_URL", "http://localhost:8000"),
+            api_key=api_key or os.getenv("LIGHTRAG_API_KEY"),
+            timeout=timeout,
+            mock_mode=os.getenv("LIGHTRAG_MOCK_MODE", "false").lower() == "true",
+        )
+
+        client = LightRAGClient(config)
+
+        # Test basic connectivity
+        click.echo(f"Configuration:")
+        click.echo(f"  Base URL: {config.base_url}")
+        click.echo(f"  API Key: {'***' if config.api_key else 'Not set'}")
+        click.echo(f"  Timeout: {config.timeout}s")
+        click.echo(f"  Mock Mode: {config.mock_mode}")
+
+        # Test entity types
+        click.echo("\nTesting entity types...")
+        types = asyncio.run(client.get_available_entity_types())
+        click.echo(f"Available entity types: {', '.join(types)}")
+
+        # Test search functionality
+        click.echo("\nTesting search functionality...")
+        result = asyncio.run(client.search_entities("test", top_k=3))
+        click.echo(f"Search test returned {len(result.entities)} entities")
+
+        click.echo("\n✅ LightRAG API test completed successfully!")
+
+    except Exception as e:
+        click.echo(f"❌ LightRAG API test failed: {str(e)}", err=True)
+        raise click.Abort()
+
+
+@lightrag.command()
+@click.argument("query")
+@click.option(
+    "--type", "entity_type", help="Filter by entity type (character, location, item)"
+)
+@click.option(
+    "--mode",
+    default="mix",
+    help="Query mode (local, global, hybrid, naive, mix, bypass)",
+)
+@click.option("--limit", "top_k", default=10, help="Maximum number of results")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["table", "json", "yaml"]),
+    default="table",
+    help="Output format",
+)
+def search(query, entity_type, mode, top_k, output_format):
+    """Search for entities in LightRAG API."""
+    try:
+        click.echo(f"Searching LightRAG for: '{query}'")
+
+        config = LightRAGAPIConfig(
+            base_url=os.getenv("LIGHTRAG_BASE_URL", "http://localhost:8000"),
+            api_key=os.getenv("LIGHTRAG_API_KEY"),
+            timeout=int(os.getenv("LIGHTRAG_TIMEOUT", "30")),
+            mock_mode=os.getenv("LIGHTRAG_MOCK_MODE", "false").lower() == "true",
+        )
+
+        client = LightRAGClient(config)
+        result = asyncio.run(client.search_entities(query, entity_type, mode, top_k))
+
+        if output_format == "json":
+            output_data = {
+                "query": result.query,
+                "mode": result.mode,
+                "total_count": result.total_count,
+                "entities": [
+                    {
+                        "name": e.name,
+                        "type": e.entity_type,
+                        "description": e.description,
+                        "properties": e.properties,
+                    }
+                    for e in result.entities
+                ],
+            }
+            click.echo(json.dumps(output_data, indent=2))
+        elif output_format == "yaml":
+            output_data = {
+                "query": result.query,
+                "mode": result.mode,
+                "total_count": result.total_count,
+                "entities": [
+                    {
+                        "name": e.name,
+                        "type": e.entity_type,
+                        "description": e.description,
+                        "properties": e.properties,
+                    }
+                    for e in result.entities
+                ],
+            }
+            click.echo(yaml.dump(output_data, default_flow_style=False))
+        else:  # table format
+            if result.entities:
+                click.echo(f"\nFound {result.total_count} entities:")
+                click.echo("-" * 80)
+                for i, entity in enumerate(result.entities, 1):
+                    click.echo(f"{i}. {entity.name} ({entity.entity_type})")
+                    if entity.description:
+                        desc = (
+                            entity.description[:100] + "..."
+                            if len(entity.description) > 100
+                            else entity.description
+                        )
+                        click.echo(f"   Description: {desc}")
+                    if entity.properties:
+                        props = ", ".join(
+                            [f"{k}: {v}" for k, v in entity.properties.items()]
+                        )
+                        click.echo(f"   Properties: {props}")
+                    click.echo()
+            else:
+                click.echo("No entities found.")
+
+    except Exception as e:
+        click.echo(f"Error searching LightRAG: {str(e)}", err=True)
+        raise click.Abort()
+
+
+@lightrag.command()
+@click.argument("entity_name")
+def show(entity_name):
+    """Show detailed information about a specific entity."""
+    try:
+        click.echo(f"Getting details for entity: '{entity_name}'")
+
+        config = LightRAGAPIConfig(
+            base_url=os.getenv("LIGHTRAG_BASE_URL", "http://localhost:8000"),
+            api_key=os.getenv("LIGHTRAG_API_KEY"),
+            timeout=int(os.getenv("LIGHTRAG_TIMEOUT", "30")),
+            mock_mode=os.getenv("LIGHTRAG_MOCK_MODE", "false").lower() == "true",
+        )
+
+        client = LightRAGClient(config)
+        entity = asyncio.run(client.get_entity_details(entity_name))
+
+        if entity:
+            click.echo(f"\nEntity Details:")
+            click.echo(f"Name: {entity.name}")
+            click.echo(f"Type: {entity.entity_type}")
+            if entity.description:
+                click.echo(f"Description: {entity.description}")
+            if entity.properties:
+                click.echo(f"Properties:")
+                for key, value in entity.properties.items():
+                    click.echo(f"  {key}: {value}")
+            if entity.relationships:
+                click.echo(f"Relationships: {', '.join(entity.relationships)}")
+        else:
+            click.echo(f"Entity '{entity_name}' not found.")
+
+    except Exception as e:
+        click.echo(f"Error getting entity details: {str(e)}", err=True)
+        raise click.Abort()
+
+
+@lightrag.command()
+@click.argument("name")
+@click.option("--type", "entity_type", help="Filter by entity type")
+def fuzzy(name, entity_type):
+    """Perform fuzzy search for entities by name."""
+    try:
+        click.echo(f"Fuzzy searching for: '{name}'")
+
+        config = LightRAGAPIConfig(
+            base_url=os.getenv("LIGHTRAG_BASE_URL", "http://localhost:8000"),
+            api_key=os.getenv("LIGHTRAG_API_KEY"),
+            timeout=int(os.getenv("LIGHTRAG_TIMEOUT", "30")),
+            mock_mode=os.getenv("LIGHTRAG_MOCK_MODE", "false").lower() == "true",
+        )
+
+        client = LightRAGClient(config)
+        results = asyncio.run(client.fuzzy_search_entities(name, entity_type))
+
+        if results:
+            click.echo(f"\nFound {len(results)} fuzzy matches:")
+            click.echo("-" * 60)
+            for i, entity in enumerate(results, 1):
+                click.echo(f"{i}. {entity.name} ({entity.entity_type})")
+                if entity.description:
+                    desc = (
+                        entity.description[:80] + "..."
+                        if len(entity.description) > 80
+                        else entity.description
+                    )
+                    click.echo(f"   {desc}")
+                click.echo()
+        else:
+            click.echo("No fuzzy matches found.")
+
+    except Exception as e:
+        click.echo(f"Error in fuzzy search: {str(e)}", err=True)
         raise click.Abort()
 
 

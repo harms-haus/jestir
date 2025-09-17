@@ -38,3 +38,18 @@ class CreativeAPIConfig(BaseModel):
         default=0.8,
         description="Temperature setting for creative generation (higher for creativity)",
     )
+
+
+class LightRAGAPIConfig(BaseModel):
+    """Configuration for LightRAG API used for entity retrieval."""
+
+    base_url: str = Field(
+        default="http://localhost:8000", description="Base URL for LightRAG API"
+    )
+    api_key: Optional[str] = Field(
+        default=None, description="API key for LightRAG API (optional)"
+    )
+    timeout: int = Field(default=30, description="Request timeout in seconds")
+    mock_mode: bool = Field(
+        default=False, description="Enable mock mode for testing without API"
+    )
