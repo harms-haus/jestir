@@ -6,6 +6,10 @@ import os
 import asyncio
 import json
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file if it exists
+load_dotenv()
 from .services.context_generator import ContextGenerator
 from .services.outline_generator import OutlineGenerator
 from .services.story_writer import StoryWriter

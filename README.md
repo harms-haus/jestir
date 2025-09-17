@@ -44,6 +44,34 @@ Jestir is a command-line tool that generates personalized bedtime stories throug
    poetry shell
    ```
 
+## Configuration
+
+Jestir automatically reads environment variables from a `.env` file in your project directory. Create a `.env` file with your API keys and configuration:
+
+**Quick Setup:**
+1. Copy the example configuration: `cp .env.example .env`
+2. Edit `.env` with your actual API keys
+
+```bash
+# OpenAI API Configuration
+OPENAI_EXTRACTION_API_KEY=your_extraction_api_key_here
+OPENAI_CREATIVE_API_KEY=your_creative_api_key_here
+
+# Optional: Customize API endpoints and models
+OPENAI_EXTRACTION_BASE_URL=https://api.openai.com/v1
+OPENAI_CREATIVE_BASE_URL=https://api.openai.com/v1
+OPENAI_EXTRACTION_MODEL=gpt-4o-mini
+OPENAI_CREATIVE_MODEL=gpt-4o
+
+# LightRAG Configuration (optional)
+LIGHTRAG_BASE_URL=http://localhost:8000
+LIGHTRAG_API_KEY=your_lightrag_api_key_here
+LIGHTRAG_TIMEOUT=30
+LIGHTRAG_MOCK_MODE=false
+```
+
+**Note:** The `.env` file is automatically loaded when you run Jestir commands. You can also set these environment variables directly in your shell if you prefer.
+
 ## Usage
 
 ### Basic Commands

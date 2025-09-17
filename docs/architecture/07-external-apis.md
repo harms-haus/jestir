@@ -181,6 +181,8 @@ GET /graph/entity/exists?name=Gandalf
 
 ## Environment Variables Summary
 
+**Note:** All environment variables are automatically loaded from a `.env` file if present in the project directory. This is handled by python-dotenv at application startup.
+
 ### LightRAG API Endpoint
 
 - `LIGHTRAG_API_KEY` - API key for LightRAG authentication (optional)

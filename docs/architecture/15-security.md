@@ -20,12 +20,13 @@
 
 ## Secrets Management
 
-- **Development:** .env file (gitignored)
+- **Development:** .env file (gitignored) - automatically loaded by python-dotenv
 - **Production:** Environment variables
 - **Code Requirements:**
   - NEVER hardcode secrets
   - Access via settings module only
   - No secrets in logs or error messages
+  - .env file is automatically loaded at application startup
 
 ## API Security
 
