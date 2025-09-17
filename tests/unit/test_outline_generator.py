@@ -1,15 +1,16 @@
 """Tests for the outline generator service."""
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
-from pathlib import Path
 import tempfile
+from pathlib import Path
+from unittest.mock import Mock, patch
+
+import pytest
 import yaml
 
-from jestir.services.outline_generator import OutlineGenerator
-from jestir.models.story_context import StoryContext
-from jestir.models.entity import Entity
 from jestir.models.api_config import CreativeAPIConfig
+from jestir.models.entity import Entity
+from jestir.models.story_context import StoryContext
+from jestir.services.outline_generator import OutlineGenerator
 
 
 class TestOutlineGenerator:
@@ -57,7 +58,7 @@ class TestOutlineGenerator:
                 subtype="protagonist",
                 name="Arthur",
                 description="A brave knight",
-            )
+            ),
         )
         context.add_plot_point("find a magical sword")
         context.add_user_input(
@@ -68,9 +69,7 @@ class TestOutlineGenerator:
         # Mock OpenAI response
         mock_response = Mock()
         mock_response.choices = [Mock()]
-        mock_response.choices[
-            0
-        ].message.content = """# Story Outline: Arthur's Quest
+        mock_response.choices[0].message.content = """# Story Outline: Arthur's Quest
 
 ## Act I: Beginning
 ### Scene 1: The Call to Adventure
@@ -96,7 +95,9 @@ With courage and determination, you can achieve your goals."""
 
         generator = OutlineGenerator()
         with patch.object(
-            generator.client.chat.completions, "create", return_value=mock_response
+            generator.client.chat.completions,
+            "create",
+            return_value=mock_response,
         ):
             outline = generator.generate_outline(context)
 
@@ -116,7 +117,7 @@ With courage and determination, you can achieve your goals."""
                 subtype="protagonist",
                 name="Arthur",
                 description="A brave knight",
-            )
+            ),
         )
         context.add_plot_point("find a magical sword")
 
@@ -143,7 +144,7 @@ With courage and determination, you can achieve your goals."""
                 subtype="protagonist",
                 name="Arthur",
                 description="A brave knight",
-            )
+            ),
         )
 
         mock_response = Mock()
@@ -152,7 +153,9 @@ With courage and determination, you can achieve your goals."""
 
         generator = OutlineGenerator()
         with patch.object(
-            generator.client.chat.completions, "create", return_value=mock_response
+            generator.client.chat.completions,
+            "create",
+            return_value=mock_response,
         ):
             outline = generator.generate_outline(context)
 
@@ -173,7 +176,7 @@ With courage and determination, you can achieve your goals."""
                 subtype="protagonist",
                 name="Arthur",
                 description="A brave knight",
-            )
+            ),
         )
         context.add_entity(
             Entity(
@@ -182,7 +185,7 @@ With courage and determination, you can achieve your goals."""
                 subtype="magical",
                 name="Enchanted Forest",
                 description="A mysterious forest",
-            )
+            ),
         )
         context.add_plot_point("find a magical sword")
         context.add_user_input(
@@ -225,7 +228,7 @@ With courage and determination, you can achieve your goals."""
                 subtype="protagonist",
                 name="Arthur",
                 description="A brave knight",
-            )
+            ),
         )
         context.add_plot_point("find a magical sword")
 
@@ -265,11 +268,11 @@ With courage and determination, you can achieve your goals."""
                     "existing": False,
                     "rag_id": None,
                     "properties": {},
-                }
+                },
             },
             "relationships": [],
             "user_inputs": {
-                "initial_request": "A brave knight named Arthur goes to find a magical sword"
+                "initial_request": "A brave knight named Arthur goes to find a magical sword",
             },
             "plot_points": ["find a magical sword"],
             "outline": None,
@@ -311,7 +314,7 @@ With courage and determination, you can achieve your goals."""
             generator.save_outline_to_file(outline_content, str(output_file))
 
             assert output_file.exists()
-            with open(output_file, "r") as f:
+            with open(output_file) as f:
                 content = f.read()
                 assert content == outline_content
 

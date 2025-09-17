@@ -38,14 +38,15 @@ def demo_basic_template_usage():
     try:
         # Load a character template
         template_content = loader.load_character_template("protagonist")
-        print(f"✅ Loaded protagonist template")
+        print("✅ Loaded protagonist template")
         print(f"Template content preview: {template_content[:100]}...")
 
         # Render the template with context
         rendered = loader.render_template(
-            "prompts/includes/character_protagonist.txt", context
+            "prompts/includes/character_protagonist.txt",
+            context,
         )
-        print(f"\n✅ Rendered template with context:")
+        print("\n✅ Rendered template with context:")
         print(rendered)
 
     except Exception as e:
@@ -75,9 +76,10 @@ def demo_user_prompt_rendering():
     print("2. Rendering outline generation prompt...")
     try:
         rendered_prompt = loader.render_template(
-            "prompts/user_prompts/outline_generation.txt", story_context
+            "prompts/user_prompts/outline_generation.txt",
+            story_context,
         )
-        print(f"✅ Rendered outline generation prompt")
+        print("✅ Rendered outline generation prompt")
         print(f"Prompt preview: {rendered_prompt[:200]}...")
 
     except Exception as e:
@@ -99,7 +101,7 @@ def demo_template_validation():
         print(f"  {category}: {len(template_list)} templates")
 
     # Validate a specific template
-    print(f"\n4. Validating character_protagonist template...")
+    print("\n4. Validating character_protagonist template...")
     try:
         validation = loader.validate_template(
             "prompts/includes/character_protagonist.txt",
@@ -109,7 +111,7 @@ def demo_template_validation():
         if validation["valid"]:
             print("✅ Template is valid")
         else:
-            print(f"❌ Template validation failed:")
+            print("❌ Template validation failed:")
             print(f"  Missing variables: {validation['missing_vars']}")
             print(f"  Extra variables: {validation['extra_vars']}")
 
@@ -169,4 +171,4 @@ def main():
 
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())

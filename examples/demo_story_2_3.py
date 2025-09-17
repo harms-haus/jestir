@@ -10,22 +10,26 @@ This script demonstrates the new CLI commands implemented for Story 2.3:
 - Export to YAML functionality
 """
 
+import os
 import subprocess
 import sys
-import os
-from pathlib import Path
 
 
 def run_command(cmd, description):
     """Run a CLI command and display the results."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"DEMO: {description}")
     print(f"Command: {cmd}")
     print("=" * 60)
 
     try:
         result = subprocess.run(
-            cmd, shell=True, capture_output=True, text=True, timeout=30
+            cmd,
+            check=False,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         print(result.stdout)
         if result.stderr:
@@ -61,7 +65,8 @@ def main():
 
     # Demo 3: Show specific character details
     success &= run_command(
-        'python -m jestir show "Lily"', "Show detailed information for character 'Lily'"
+        'python -m jestir show "Lily"',
+        "Show detailed information for character 'Lily'",
     )
 
     # Demo 4: Search with pagination
@@ -91,7 +96,8 @@ def main():
 
     # Demo 8: List all locations
     success &= run_command(
-        "python -m jestir list locations", "List all locations without filtering"
+        "python -m jestir list locations",
+        "List all locations without filtering",
     )
 
     # Demo 9: Search items
@@ -102,13 +108,13 @@ def main():
 
     # Show exported file if it exists
     if os.path.exists(export_file):
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"EXPORTED YAML FILE: {export_file}")
         print("=" * 60)
-        with open(export_file, "r") as f:
+        with open(export_file) as f:
             print(f.read())
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     if success:
         print("✅ All Story 2.3 demos completed successfully!")
         print("\nImplemented features:")
@@ -123,7 +129,7 @@ def main():
         print("❌ Some demos failed. Check the output above for errors.")
         return 1
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("Story 2.3 Acceptance Criteria Status:")
     print("✅ Command 'story search characters --query \"dragon\"' returns matches")
     print("✅ Command 'story list locations --type interior' shows filtered results")
@@ -137,4 +143,4 @@ def main():
 
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())

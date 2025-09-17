@@ -1,9 +1,9 @@
 """Template loading service for prompt management."""
 
+import logging
 import re
 from pathlib import Path
-from typing import Dict, Any, Optional
-import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class TemplateLoader:
     """Loads and processes templates with variable substitution."""
 
-    def __init__(self, templates_dir: Optional[str] = None):
+    def __init__(self, templates_dir: str | None = None):
         """Initialize the template loader with templates directory."""
         if templates_dir is None:
             # Default to templates directory in project root
@@ -19,7 +19,7 @@ class TemplateLoader:
             templates_dir = str(project_root / "templates")
 
         self.templates_dir = Path(templates_dir)
-        self._template_cache: Dict[str, str] = {}
+        self._template_cache: dict[str, str] = {}
 
     def load_template(self, template_path: str) -> str:
         """Load a template from file with caching."""
@@ -30,7 +30,7 @@ class TemplateLoader:
             raise FileNotFoundError(
                 f"Template file not found: {template_path}\n"
                 f"Expected location: {template_file}\n"
-                f"Available templates: {available_templates}"
+                f"Available templates: {available_templates}",
             )
 
         # Check cache first
@@ -40,7 +40,7 @@ class TemplateLoader:
 
         try:
             # Load template
-            with open(template_file, "r", encoding="utf-8") as f:
+            with open(template_file, encoding="utf-8") as f:
                 content = f.read()
 
             # Cache the template
@@ -50,20 +50,20 @@ class TemplateLoader:
         except PermissionError:
             raise PermissionError(
                 f"Cannot read template file: {template_path}\n"
-                f"Check file permissions for: {template_file}"
+                f"Check file permissions for: {template_file}",
             )
         except UnicodeDecodeError as e:
             raise ValueError(
                 f"Invalid file encoding in template: {template_path}\n"
-                f"Template files must be UTF-8 encoded. Error: {e}"
+                f"Template files must be UTF-8 encoded. Error: {e}",
             )
 
-    def render_template(self, template_path: str, context: Dict[str, Any]) -> str:
+    def render_template(self, template_path: str, context: dict[str, Any]) -> str:
         """Render a template with variable substitution."""
         template_content = self.load_template(template_path)
         return self._substitute_variables(template_content, context)
 
-    def _substitute_variables(self, template: str, context: Dict[str, Any]) -> str:
+    def _substitute_variables(self, template: str, context: dict[str, Any]) -> str:
         """Substitute {{key}} variables in template with context values."""
 
         def replace_variable(match):
@@ -76,9 +76,8 @@ class TemplateLoader:
                 if value is None:
                     return ""
                 return str(value)
-            else:
-                logger.warning(f"Template variable '{key}' not found in context")
-                return f"{{{{{full_key}}}}}"  # Keep the original placeholder with documentation
+            logger.warning(f"Template variable '{key}' not found in context")
+            return f"{{{{{full_key}}}}}"  # Keep the original placeholder with documentation
 
         # Pattern to match {{key}} variables (including those with # documentation)
         pattern = r"\{\{([^}]+)\}\}"
@@ -108,15 +107,15 @@ class TemplateLoader:
         """Clear the template cache."""
         self._template_cache.clear()
 
-    def get_available_templates(self) -> Dict[str, list]:
+    def get_available_templates(self) -> dict[str, list]:
         """Get list of available templates by category."""
-        templates: Dict[str, list] = {
+        templates: dict[str, list] = {
             "system_prompts": [],
             "user_prompts": [],
             "includes": [],
         }
 
-        for category in templates.keys():
+        for category in templates:
             category_dir = self.templates_dir / "prompts" / category
             if category_dir.exists():
                 for file_path in category_dir.glob("*.txt"):
@@ -125,8 +124,10 @@ class TemplateLoader:
         return templates
 
     def validate_template(
-        self, template_path: str, required_vars: list
-    ) -> Dict[str, Any]:
+        self,
+        template_path: str,
+        required_vars: list,
+    ) -> dict[str, Any]:
         """Validate that a template has all required variables."""
         template_content = self.load_template(template_path)
 
@@ -163,7 +164,6 @@ class TemplateLoader:
 
             if template_list:
                 return ", ".join(sorted(template_list))
-            else:
-                return "No templates found"
+            return "No templates found"
         except Exception:
             return "Unable to list templates"

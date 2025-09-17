@@ -1,8 +1,10 @@
 """Tests for the template loader service."""
 
-import pytest
 from pathlib import Path
-from unittest.mock import patch, mock_open
+from unittest.mock import mock_open, patch
+
+import pytest
+
 from jestir.services.template_loader import TemplateLoader
 
 
@@ -84,7 +86,7 @@ class TestTemplateLoader:
         with patch.object(loader, "load_template") as mock_load:
             loader.load_character_template("protagonist")
             mock_load.assert_called_once_with(
-                "prompts/includes/character_protagonist.txt"
+                "prompts/includes/character_protagonist.txt",
             )
 
     def test_load_location_template(self):
@@ -102,7 +104,7 @@ class TestTemplateLoader:
         with patch.object(loader, "load_template") as mock_load:
             loader.load_system_prompt("context_extraction")
             mock_load.assert_called_once_with(
-                "prompts/system_prompts/context_extraction.txt"
+                "prompts/system_prompts/context_extraction.txt",
             )
 
     def test_load_user_prompt(self):
@@ -112,7 +114,7 @@ class TestTemplateLoader:
         with patch.object(loader, "load_template") as mock_load:
             loader.load_user_prompt("story_generation")
             mock_load.assert_called_once_with(
-                "prompts/user_prompts/story_generation.txt"
+                "prompts/user_prompts/story_generation.txt",
             )
 
     def test_clear_cache(self):

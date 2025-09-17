@@ -1,11 +1,9 @@
 """Unit tests for data models."""
 
-import pytest
-from datetime import datetime
+from jestir.models.api_config import CreativeAPIConfig, ExtractionAPIConfig
 from jestir.models.entity import Entity
 from jestir.models.relationship import Relationship
 from jestir.models.story_context import StoryContext
-from jestir.models.api_config import ExtractionAPIConfig, CreativeAPIConfig
 
 
 class TestEntity:
@@ -81,7 +79,9 @@ class TestRelationship:
     def test_relationship_with_list_subject_object(self):
         """Test relationship with list subject and object."""
         relationship = Relationship(
-            type="meets", subject=["char_001", "char_002"], object=["char_003"]
+            type="meets",
+            subject=["char_001", "char_002"],
+            object=["char_003"],
         )
 
         assert relationship.subject == ["char_001", "char_002"]

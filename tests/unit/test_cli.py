@@ -1,11 +1,11 @@
 """Unit tests for CLI functionality."""
 
-import pytest
-import tempfile
 import os
-from pathlib import Path
+import tempfile
 from unittest.mock import patch
+
 from click.testing import CliRunner
+
 from jestir.cli import main
 
 
@@ -102,7 +102,7 @@ class TestCLI:
             assert os.path.exists(output_file)
 
             # Check that the file contains YAML content
-            with open(output_file, "r") as f:
+            with open(output_file) as f:
                 content = f.read()
                 assert "metadata" in content
                 assert "entities" in content
@@ -184,7 +184,8 @@ class TestCLI:
         """Test search command for characters."""
         with patch.dict("os.environ", {"LIGHTRAG_MOCK_MODE": "true"}):
             result = self.runner.invoke(
-                main, ["search", "characters", "--query", "dragon"]
+                main,
+                ["search", "characters", "--query", "dragon"],
             )
             assert result.exit_code == 0
             assert "Searching characters for: 'dragon'" in result.output
@@ -194,7 +195,8 @@ class TestCLI:
         """Test search command for locations."""
         with patch.dict("os.environ", {"LIGHTRAG_MOCK_MODE": "true"}):
             result = self.runner.invoke(
-                main, ["search", "locations", "--query", "forest"]
+                main,
+                ["search", "locations", "--query", "forest"],
             )
             assert result.exit_code == 0
             assert "Searching locations for: 'forest'" in result.output
@@ -239,7 +241,7 @@ class TestCLI:
                 assert os.path.exists(export_file)
 
                 # Check that the exported file contains YAML content
-                with open(export_file, "r") as f:
+                with open(export_file) as f:
                     content = f.read()
                     assert "entities:" in content
                     assert "Purple Dragon" in content
@@ -262,7 +264,8 @@ class TestCLI:
         """Test list command with type filtering."""
         with patch.dict("os.environ", {"LIGHTRAG_MOCK_MODE": "true"}):
             result = self.runner.invoke(
-                main, ["list", "locations", "--type", "interior"]
+                main,
+                ["list", "locations", "--type", "interior"],
             )
             assert result.exit_code == 0
             assert "type 'interior'" in result.output
@@ -293,7 +296,8 @@ class TestCLI:
         """Test search command with JSON output format."""
         with patch.dict("os.environ", {"LIGHTRAG_MOCK_MODE": "true"}):
             result = self.runner.invoke(
-                main, ["search", "characters", "--query", "dragon", "--format", "json"]
+                main,
+                ["search", "characters", "--query", "dragon", "--format", "json"],
             )
             assert result.exit_code == 0
             # Should be valid JSON (skip the "Searching..." message)
@@ -310,7 +314,8 @@ class TestCLI:
         """Test search command with YAML output format."""
         with patch.dict("os.environ", {"LIGHTRAG_MOCK_MODE": "true"}):
             result = self.runner.invoke(
-                main, ["search", "characters", "--query", "dragon", "--format", "yaml"]
+                main,
+                ["search", "characters", "--query", "dragon", "--format", "yaml"],
             )
             assert result.exit_code == 0
             # Should be valid YAML

@@ -28,11 +28,76 @@ security-report = "jestir.security:generate_security_report"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "C90", "I", "N", "UP", "YTT", "BLE", "FBT", "B", "A", "COM", "C4", "DTZ", "T10", "EM", "EXE", "FA", "ISC", "ICN", "G", "INP", "PIE", "T20", "PYI", "PT", "Q", "RSE", "RET", "SLF", "SLOT", "SIM", "TID", "TCH", "INT", "ARG", "PTH", "TD", "FIX", "ERA", "PD", "PGH", "PL", "TRY", "FLY", "NPY", "AIR", "PERF", "FURB", "LOG", "RUF"]
+ignore = [
+    "E501",  # line-too-long, handled by formatter
+    "S101",  # assert detected (okay in tests)
+    "PLR2004",  # magic value used in comparison (okay in tests)
+    "SIM117",  # use single with statement (can be complex in tests)
+    "SLF001",  # private member accessed (okay in tests)
+    "INP001",  # implicit namespace package (test structure)
+    "TID252",  # prefer absolute imports (keeping relative for now)
+    "PLC0415",  # import at top level (some are conditional)
+    "BLE001",  # blind exception catching (common pattern)
+    "TRY400",  # use logging.exception (keeping error for now)
+    "G004",  # f-string in logging (keeping for readability)
+    "F841",  # unused variable (some are for clarity)
+    "TRY300",  # move to else block (keeping current structure)
+    "RET504",  # unnecessary assignment (keeping for clarity)
+    "TRY301",  # abstract raise (keeping simple)
+    "TRY003",  # avoid long messages (keeping for clarity)
+    "EM101",  # exception string literal (keeping simple)
+    "B007",  # loop control variable not used (keeping for clarity)
+    "PERF401",  # use list.extend (keeping readable)
+    "FBT001",  # boolean positional argument (API design)
+    "FBT002",  # boolean default positional argument (API design)
+    "ARG002",  # unused method argument (API compatibility)
+    "C901",  # function too complex (acceptable for validation)
+    "SIM102",  # single if statement (keeping readable)
+    "EM102",  # exception f-string literal (keeping readable)
+    "PLC0206",  # extracting from dict (keeping readable)
+    "PTH123",  # use Path.open (keeping open for now)
+    "PTH109",  # use Path.cwd (keeping os.getcwd for now)
+    "PTH118",  # use Path with / (keeping os.path.join for now)
+    "PTH110",  # use Path.exists (keeping os.path.exists for now)
+    "PTH103",  # use Path.mkdir (keeping os.makedirs for now)
+    "PTH108",  # use Path.unlink (keeping os.unlink for now)
+    "RUF059",  # unpacked variable unused (keeping for clarity)
+    "PT012",  # pytest.raises single statement (keeping readable)
+    "B017",  # assert blind exception (keeping for tests)
+    "PT011",  # pytest.raises too broad (keeping for tests)
+    "E402",  # module import not at top (load_dotenv pattern)
+    "PLR0915",  # too many statements (CLI functions)
+    "B904",  # raise from err (keeping simple)
+    "RSE102",  # unnecessary parentheses (keeping readable)
+    "PLR0912",  # too many branches (CLI functions)
+    "PLR0913",  # too many arguments (CLI functions)
+    "DTZ005",  # datetime.now without tz (keeping simple)
+    "EXE001",  # shebang present but not executable (security module)
+    "ARG001",  # unused function argument (API compatibility)
+    "T201",  # print found (security module needs print)
+    "PERF102",  # use values() method (keeping readable)
+    "PERF203",  # try-except in loop (acceptable pattern)
+    "PLR0911",  # too many return statements (acceptable)
+    "PLW2901",  # loop variable overwritten (acceptable pattern)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
 [tool.uv]
 dev-dependencies = [
     "pytest>=8.4.2,<9.0.0",
     "pytest-asyncio>=0.25.0,<1.0.0",
-    "black>=25.1.0,<26.0.0",
+    "ruff>=0.13.0,<1.0.0",
     "mypy>=1.18.1,<2.0.0",
     "pre-commit>=4.3.0,<5.0.0",
     "types-pyyaml>=6.0.12.20250915,<7.0.0.0",

@@ -1,16 +1,16 @@
 """Context validation service for checking context file structure and consistency."""
 
-import yaml
 import asyncio
-from pathlib import Path
-from typing import List, Dict, Any, Optional, Set
+import os
 from dataclasses import dataclass
-from ..models.story_context import StoryContext
+
+import yaml
+
+from ..models.api_config import LightRAGAPIConfig
 from ..models.entity import Entity
 from ..models.relationship import Relationship
+from ..models.story_context import StoryContext
 from .lightrag_client import LightRAGClient
-from ..models.api_config import LightRAGAPIConfig
-import os
 
 
 @dataclass
@@ -18,16 +18,16 @@ class ValidationResult:
     """Result of context validation."""
 
     is_valid: bool
-    errors: List[str]
-    warnings: List[str]
-    suggestions: List[str]
-    fixed_issues: Optional[List[str]] = None
+    errors: list[str]
+    warnings: list[str]
+    suggestions: list[str]
+    fixed_issues: list[str] | None = None
 
 
 class ContextValidator:
     """Validates context files for structure, consistency, and entity references."""
 
-    def __init__(self, lightrag_config: Optional[LightRAGAPIConfig] = None):
+    def __init__(self, lightrag_config: LightRAGAPIConfig | None = None):
         """Initialize the context validator."""
         self.lightrag_config = lightrag_config or self._load_lightrag_config()
         self.lightrag_client = LightRAGClient(self.lightrag_config)
@@ -42,7 +42,10 @@ class ContextValidator:
         )
 
     def validate_context_file(
-        self, context_file: str, verbose: bool = False, auto_fix: bool = False
+        self,
+        context_file: str,
+        verbose: bool = False,
+        auto_fix: bool = False,
     ) -> ValidationResult:
         """
         Validate a context file for structure and consistency.
@@ -55,10 +58,10 @@ class ContextValidator:
         Returns:
             ValidationResult with validation status and issues
         """
-        errors: List[str] = []
-        warnings: List[str] = []
-        suggestions: List[str] = []
-        fixed_issues: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
+        suggestions: list[str] = []
+        fixed_issues: list[str] = []
 
         try:
             # Load context file
@@ -81,7 +84,7 @@ class ContextValidator:
 
             # Validate relationships
             relationship_errors, relationship_warnings = self._validate_relationships(
-                context
+                context,
             )
             errors.extend(relationship_errors)
             warnings.extend(relationship_warnings)
@@ -93,7 +96,7 @@ class ContextValidator:
             # Validate entity references in LightRAG
             if not self.lightrag_config.mock_mode:
                 lightrag_errors, lightrag_warnings = asyncio.run(
-                    self._validate_lightrag_references(context)
+                    self._validate_lightrag_references(context),
                 )
                 errors.extend(lightrag_errors)
                 warnings.extend(lightrag_warnings)
@@ -118,25 +121,25 @@ class ContextValidator:
         except Exception as e:
             return ValidationResult(
                 is_valid=False,
-                errors=[f"Failed to validate context file: {str(e)}"],
+                errors=[f"Failed to validate context file: {e!s}"],
                 warnings=[],
                 suggestions=[
-                    "Check that the file is valid YAML and follows the expected structure"
+                    "Check that the file is valid YAML and follows the expected structure",
                 ],
             )
 
     def _load_context_file(self, context_file: str) -> StoryContext:
         """Load context file and parse as StoryContext."""
-        with open(context_file, "r", encoding="utf-8") as f:
+        with open(context_file, encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
         # Convert to StoryContext object
         return StoryContext(**data)
 
-    def _validate_structure(self, context: StoryContext) -> tuple[List[str], List[str]]:
+    def _validate_structure(self, context: StoryContext) -> tuple[list[str], list[str]]:
         """Validate basic structure of the context."""
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
 
         # Check required top-level fields
         required_fields = [
@@ -160,10 +163,10 @@ class ContextValidator:
 
         return errors, warnings
 
-    def _validate_settings(self, context: StoryContext) -> tuple[List[str], List[str]]:
+    def _validate_settings(self, context: StoryContext) -> tuple[list[str], list[str]]:
         """Validate required settings are present."""
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
 
         if not hasattr(context, "settings") or not context.settings:
             errors.append("Settings section is missing or empty")
@@ -191,7 +194,7 @@ class ContextValidator:
             ]
             if context.settings["genre"] not in valid_genres:
                 warnings.append(
-                    f"Genre '{context.settings['genre']}' is not in common genres: {', '.join(valid_genres)}"
+                    f"Genre '{context.settings['genre']}' is not in common genres: {', '.join(valid_genres)}",
                 )
 
         if "tone" in context.settings:
@@ -205,22 +208,22 @@ class ContextValidator:
             ]
             if context.settings["tone"] not in valid_tones:
                 warnings.append(
-                    f"Tone '{context.settings['tone']}' is not in common tones: {', '.join(valid_tones)}"
+                    f"Tone '{context.settings['tone']}' is not in common tones: {', '.join(valid_tones)}",
                 )
 
         if "length" in context.settings:
             valid_lengths = ["short", "medium", "long"]
             if context.settings["length"] not in valid_lengths:
                 warnings.append(
-                    f"Length '{context.settings['length']}' is not in valid lengths: {', '.join(valid_lengths)}"
+                    f"Length '{context.settings['length']}' is not in valid lengths: {', '.join(valid_lengths)}",
                 )
 
         return errors, warnings
 
-    def _validate_entities(self, context: StoryContext) -> tuple[List[str], List[str]]:
+    def _validate_entities(self, context: StoryContext) -> tuple[list[str], list[str]]:
         """Validate entities in the context."""
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
 
         if not hasattr(context, "entities") or not context.entities:
             warnings.append("No entities found in context")
@@ -244,7 +247,7 @@ class ContextValidator:
             valid_types = ["character", "location", "item"]
             if entity.type not in valid_types:
                 errors.append(
-                    f"Entity {entity_id} has invalid type '{entity.type}'. Must be one of: {', '.join(valid_types)}"
+                    f"Entity {entity_id} has invalid type '{entity.type}'. Must be one of: {', '.join(valid_types)}",
                 )
 
             # Check character subtypes
@@ -252,23 +255,24 @@ class ContextValidator:
                 valid_subtypes = ["protagonist", "antagonist", "supporting", "animal"]
                 if entity.subtype not in valid_subtypes:
                     warnings.append(
-                        f"Character {entity_id} has unusual subtype '{entity.subtype}'. Common subtypes: {', '.join(valid_subtypes)}"
+                        f"Character {entity_id} has unusual subtype '{entity.subtype}'. Common subtypes: {', '.join(valid_subtypes)}",
                     )
 
         return errors, warnings
 
     def _validate_relationships(
-        self, context: StoryContext
-    ) -> tuple[List[str], List[str]]:
+        self,
+        context: StoryContext,
+    ) -> tuple[list[str], list[str]]:
         """Validate relationships between entities."""
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
 
         if not hasattr(context, "relationships") or not context.relationships:
             return errors, warnings
 
         # Get all entity IDs
-        entity_ids: Set[str] = (
+        entity_ids: set[str] = (
             set(context.entities.keys()) if context.entities else set()
         )
 
@@ -292,13 +296,13 @@ class ContextValidator:
             for subject_id in subject_ids:
                 if subject_id not in entity_ids:
                     errors.append(
-                        f"Relationship {i} references non-existent subject entity: {subject_id}"
+                        f"Relationship {i} references non-existent subject entity: {subject_id}",
                     )
 
             for object_id in object_ids:
                 if object_id not in entity_ids:
                     errors.append(
-                        f"Relationship {i} references non-existent object entity: {object_id}"
+                        f"Relationship {i} references non-existent object entity: {object_id}",
                     )
 
             # Check for self-referential relationships
@@ -306,7 +310,7 @@ class ContextValidator:
             all_object_ids = set(object_ids)
             if all_subject_ids & all_object_ids:  # Check for intersection
                 warnings.append(
-                    f"Relationship {i} is self-referential (entity relates to itself)"
+                    f"Relationship {i} is self-referential (entity relates to itself)",
                 )
 
             # Check relationship type validity
@@ -325,20 +329,20 @@ class ContextValidator:
             ]
             if relationship.type not in valid_types:
                 warnings.append(
-                    f"Relationship {i} has unusual type '{relationship.type}'. Common types: {', '.join(valid_types)}"
+                    f"Relationship {i} has unusual type '{relationship.type}'. Common types: {', '.join(valid_types)}",
                 )
 
         return errors, warnings
 
-    def _check_unusual_patterns(self, context: StoryContext) -> List[str]:
+    def _check_unusual_patterns(self, context: StoryContext) -> list[str]:
         """Check for unusual patterns in the context."""
-        warnings: List[str] = []
+        warnings: list[str] = []
 
         if not hasattr(context, "entities") or not context.entities:
             return warnings
 
         # Check for protagonists
-        protagonists: List[Entity] = [
+        protagonists: list[Entity] = [
             e
             for e in context.entities.values()
             if e.type == "character"
@@ -347,11 +351,11 @@ class ContextValidator:
         ]
         if not protagonists:
             warnings.append(
-                "No protagonists found in story - consider adding a main character"
+                "No protagonists found in story - consider adding a main character",
             )
 
         # Check for antagonists
-        antagonists: List[Entity] = [
+        antagonists: list[Entity] = [
             e
             for e in context.entities.values()
             if e.type == "character"
@@ -363,23 +367,23 @@ class ContextValidator:
             and len([e for e in context.entities.values() if e.type == "character"]) > 1
         ):
             warnings.append(
-                "No antagonists found - consider adding a character with conflict"
+                "No antagonists found - consider adding a character with conflict",
             )
 
         # Check for locations
-        locations: List[Entity] = [
+        locations: list[Entity] = [
             e for e in context.entities.values() if e.type == "location"
         ]
         if not locations:
             warnings.append("No locations found - consider adding story settings")
 
         # Check for too many characters
-        characters: List[Entity] = [
+        characters: list[Entity] = [
             e for e in context.entities.values() if e.type == "character"
         ]
         if len(characters) > 10:
             warnings.append(
-                f"Many characters found ({len(characters)}) - consider simplifying for clarity"
+                f"Many characters found ({len(characters)}) - consider simplifying for clarity",
             )
 
         # Check for plot points
@@ -389,11 +393,12 @@ class ContextValidator:
         return warnings
 
     async def _validate_lightrag_references(
-        self, context: StoryContext
-    ) -> tuple[List[str], List[str]]:
+        self,
+        context: StoryContext,
+    ) -> tuple[list[str], list[str]]:
         """Validate that entity references exist in LightRAG."""
-        errors: List[str] = []
-        warnings: List[str] = []
+        errors: list[str] = []
+        warnings: list[str] = []
 
         if not hasattr(context, "entities") or not context.entities:
             return errors, warnings
@@ -403,30 +408,31 @@ class ContextValidator:
             try:
                 # Check if entity exists in LightRAG
                 lightrag_entity = await self.lightrag_client.get_entity_details(
-                    entity.name
+                    entity.name,
                 )
                 if not lightrag_entity:
                     warnings.append(
-                        f"Entity '{entity.name}' not found in LightRAG knowledge base"
+                        f"Entity '{entity.name}' not found in LightRAG knowledge base",
                     )
-                else:
-                    # Check for type consistency
-                    if lightrag_entity.entity_type != entity.type:
-                        warnings.append(
-                            f"Entity '{entity.name}' type mismatch: context has '{entity.type}', LightRAG has '{lightrag_entity.entity_type}'"
-                        )
+                # Check for type consistency
+                elif lightrag_entity.entity_type != entity.type:
+                    warnings.append(
+                        f"Entity '{entity.name}' type mismatch: context has '{entity.type}', LightRAG has '{lightrag_entity.entity_type}'",
+                    )
             except Exception as e:
                 warnings.append(
-                    f"Could not validate entity '{entity.name}' against LightRAG: {str(e)}"
+                    f"Could not validate entity '{entity.name}' against LightRAG: {e!s}",
                 )
 
         return errors, warnings
 
     def _generate_suggestions(
-        self, errors: List[str], warnings: List[str]
-    ) -> List[str]:
+        self,
+        errors: list[str],
+        warnings: list[str],
+    ) -> list[str]:
         """Generate fix suggestions based on errors and warnings."""
-        suggestions: List[str] = []
+        suggestions: list[str] = []
 
         for error in errors:
             if "Missing required field" in error:
@@ -435,23 +441,23 @@ class ContextValidator:
                 suggestions.append("Add the missing setting with an appropriate value")
             elif "invalid type" in error:
                 suggestions.append(
-                    "Use a valid entity type: character, location, or item"
+                    "Use a valid entity type: character, location, or item",
                 )
             elif "not a valid Entity object" in error:
                 suggestions.append(
-                    "Ensure all entities follow the proper Entity structure"
+                    "Ensure all entities follow the proper Entity structure",
                 )
 
         for warning in warnings:
             if "not found in LightRAG" in warning:
                 suggestions.append(
-                    "Consider adding the entity to LightRAG or using an existing entity"
+                    "Consider adding the entity to LightRAG or using an existing entity",
                 )
             elif "No protagonists found" in warning:
                 suggestions.append("Add a character with subtype 'protagonist'")
             elif "No antagonists found" in warning:
                 suggestions.append(
-                    "Add a character with subtype 'antagonist' for conflict"
+                    "Add a character with subtype 'antagonist' for conflict",
                 )
             elif "No locations found" in warning:
                 suggestions.append("Add location entities to set the story scene")
@@ -459,10 +465,13 @@ class ContextValidator:
         return suggestions
 
     def _attempt_auto_fix(
-        self, context: StoryContext, errors: List[str], context_file: str
-    ) -> List[str]:
+        self,
+        context: StoryContext,
+        errors: list[str],
+        context_file: str,
+    ) -> list[str]:
         """Attempt to automatically fix common issues."""
-        fixed_issues: List[str] = []
+        fixed_issues: list[str] = []
 
         # This is a placeholder for auto-fix functionality
         # In a real implementation, this would attempt to fix issues like:

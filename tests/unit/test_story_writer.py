@@ -1,14 +1,14 @@
 """Unit tests for the StoryWriter service."""
 
-import pytest
-from unittest.mock import Mock, patch, mock_open
-import yaml
-from pathlib import Path
+from unittest.mock import Mock, mock_open, patch
 
-from jestir.services.story_writer import StoryWriter
-from jestir.models.story_context import StoryContext
-from jestir.models.entity import Entity
+import pytest
+import yaml
+
 from jestir.models.api_config import CreativeAPIConfig
+from jestir.models.entity import Entity
+from jestir.models.story_context import StoryContext
+from jestir.services.story_writer import StoryWriter
 
 
 class TestStoryWriter:
@@ -41,10 +41,10 @@ class TestStoryWriter:
                     subtype="protagonist",
                     name="Whiskers",
                     description="A brave little mouse",
-                )
+                ),
             },
             user_inputs={
-                "initial_request": "A brave little mouse named Whiskers who saves the enchanted forest"
+                "initial_request": "A brave little mouse named Whiskers who saves the enchanted forest",
             },
             plot_points=["goes on an adventure", "saves the forest"],
         )
@@ -101,9 +101,9 @@ Even when things seem difficult, with courage and determination, you can overcom
         # Mock OpenAI response
         mock_response = Mock()
         mock_response.choices = [Mock()]
-        mock_response.choices[0].message.content = (
-            "# Whiskers's Adventure\n\nOnce upon a time..."
-        )
+        mock_response.choices[
+            0
+        ].message.content = "# Whiskers's Adventure\n\nOnce upon a time..."
 
         mock_client = Mock()
         mock_client.chat.completions.create.return_value = mock_response

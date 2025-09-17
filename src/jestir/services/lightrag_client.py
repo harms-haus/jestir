@@ -1,11 +1,11 @@
 """LightRAG API client for entity retrieval and search."""
 
-import json
-import asyncio
 import logging
-from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
+from typing import Any
+
 import httpx
+
 from ..models.api_config import LightRAGAPIConfig
 
 logger = logging.getLogger(__name__)
@@ -17,16 +17,16 @@ class LightRAGEntity:
 
     name: str
     entity_type: str
-    description: Optional[str] = None
-    properties: Optional[Dict[str, Any]] = None
-    relationships: Optional[List[str]] = None
+    description: str | None = None
+    properties: dict[str, Any] | None = None
+    relationships: list[str] | None = None
 
 
 @dataclass
 class LightRAGSearchResult:
     """Represents a search result from LightRAG API."""
 
-    entities: List[LightRAGEntity]
+    entities: list[LightRAGEntity]
     total_count: int
     query: str
     mode: str
@@ -35,7 +35,7 @@ class LightRAGSearchResult:
 class LightRAGClient:
     """Client for interacting with LightRAG API for entity retrieval."""
 
-    def __init__(self, config: Optional[LightRAGAPIConfig] = None):
+    def __init__(self, config: LightRAGAPIConfig | None = None):
         """Initialize the LightRAG client with configuration."""
         self.config = config or self._load_config_from_env()
         self.base_url = self.config.base_url.rstrip("/")
@@ -55,7 +55,7 @@ class LightRAGClient:
     async def search_entities(
         self,
         query: str,
-        entity_type: Optional[str] = None,
+        entity_type: str | None = None,
         mode: str = "mix",
         top_k: int = 10,
     ) -> LightRAGSearchResult:
@@ -92,7 +92,9 @@ class LightRAGClient:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 headers = self._get_headers()
                 response = await client.post(
-                    f"{self.base_url}/query", json=payload, headers=headers
+                    f"{self.base_url}/query",
+                    json=payload,
+                    headers=headers,
                 )
                 response.raise_for_status()
 
@@ -112,7 +114,7 @@ class LightRAGClient:
             logger.warning(f"Unexpected LightRAG error: {e}")
             return self._mock_search_entities(query, entity_type, mode, top_k)
 
-    async def get_entity_details(self, entity_name: str) -> Optional[LightRAGEntity]:
+    async def get_entity_details(self, entity_name: str) -> LightRAGEntity | None:
         """
         Get detailed information about a specific entity.
 
@@ -148,7 +150,9 @@ class LightRAGClient:
                 }
 
                 response = await client.post(
-                    f"{self.base_url}/query", json=payload, headers=headers
+                    f"{self.base_url}/query",
+                    json=payload,
+                    headers=headers,
                 )
                 response.raise_for_status()
 
@@ -168,7 +172,7 @@ class LightRAGClient:
             logger.warning(f"Unexpected LightRAG error: {e}")
             return self._mock_get_entity_details(entity_name)
 
-    async def get_available_entity_types(self) -> List[str]:
+    async def get_available_entity_types(self) -> list[str]:
         """
         Get list of available entity types from the knowledge graph.
 
@@ -182,7 +186,8 @@ class LightRAGClient:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 headers = self._get_headers()
                 response = await client.get(
-                    f"{self.base_url}/graph/label/list", headers=headers
+                    f"{self.base_url}/graph/label/list",
+                    headers=headers,
                 )
                 response.raise_for_status()
                 return response.json()
@@ -201,8 +206,10 @@ class LightRAGClient:
             return self._mock_get_entity_types()
 
     async def fuzzy_search_entities(
-        self, name: str, entity_type: Optional[str] = None
-    ) -> List[LightRAGEntity]:
+        self,
+        name: str,
+        entity_type: str | None = None,
+    ) -> list[LightRAGEntity]:
         """
         Perform fuzzy search for entities by name with variations.
 
@@ -229,7 +236,10 @@ class LightRAGClient:
         for variation in search_variations:
             try:
                 result = await self.search_entities(
-                    variation, entity_type=entity_type, mode="local", top_k=5
+                    variation,
+                    entity_type=entity_type,
+                    mode="local",
+                    top_k=5,
                 )
 
                 for entity in result.entities:
@@ -242,7 +252,7 @@ class LightRAGClient:
 
         return all_results
 
-    def _get_headers(self) -> Dict[str, str]:
+    def _get_headers(self) -> dict[str, str]:
         """Get HTTP headers for API requests."""
         headers = {"Content-Type": "application/json"}
         if self.config.api_key:
@@ -250,7 +260,10 @@ class LightRAGClient:
         return headers
 
     def _parse_search_response(
-        self, response: Dict[str, Any], query: str, mode: str
+        self,
+        response: dict[str, Any],
+        query: str,
+        mode: str,
     ) -> LightRAGSearchResult:
         """Parse search response from LightRAG API."""
         entities = []
@@ -267,7 +280,7 @@ class LightRAGClient:
                     entity_type="character",
                     description="A character from the story",
                     properties={"age": "unknown", "role": "protagonist"},
-                )
+                ),
             )
         elif "location" in query.lower() or "place" in query.lower():
             entities.append(
@@ -276,7 +289,7 @@ class LightRAGClient:
                     entity_type="location",
                     description="A location from the story",
                     properties={"type": "magical", "accessibility": "public"},
-                )
+                ),
             )
         elif "item" in query.lower() or "object" in query.lower():
             entities.append(
@@ -285,15 +298,20 @@ class LightRAGClient:
                     entity_type="item",
                     description="An item from the story",
                     properties={"type": "magical", "rarity": "common"},
-                )
+                ),
             )
 
         return LightRAGSearchResult(
-            entities=entities, total_count=len(entities), query=query, mode=mode
+            entities=entities,
+            total_count=len(entities),
+            query=query,
+            mode=mode,
         )
 
     def _parse_entity_details(
-        self, response: Dict[str, Any], entity_name: str
+        self,
+        response: dict[str, Any],
+        entity_name: str,
     ) -> LightRAGEntity:
         """Parse entity details from LightRAG API response."""
         response_text = response.get("response", "")
@@ -310,7 +328,11 @@ class LightRAGClient:
         )
 
     def _mock_search_entities(
-        self, query: str, entity_type: Optional[str], mode: str, top_k: int
+        self,
+        query: str,
+        entity_type: str | None,
+        mode: str,
+        top_k: int,
     ) -> LightRAGSearchResult:
         """Mock search entities for testing."""
         entities = []
@@ -327,7 +349,7 @@ class LightRAGClient:
                         "personality": "friendly",
                         "habitat": "magic forest",
                     },
-                )
+                ),
             )
 
         if "forest" in query.lower() or "location" in query.lower():
@@ -341,7 +363,7 @@ class LightRAGClient:
                         "accessibility": "public",
                         "danger_level": "low",
                     },
-                )
+                ),
             )
 
         if "lily" in query.lower() or "character" in query.lower():
@@ -355,14 +377,17 @@ class LightRAGClient:
                         "personality": "curious and brave",
                         "role": "protagonist",
                     },
-                )
+                ),
             )
 
         return LightRAGSearchResult(
-            entities=entities[:top_k], total_count=len(entities), query=query, mode=mode
+            entities=entities[:top_k],
+            total_count=len(entities),
+            query=query,
+            mode=mode,
         )
 
-    def _mock_get_entity_details(self, entity_name: str) -> Optional[LightRAGEntity]:
+    def _mock_get_entity_details(self, entity_name: str) -> LightRAGEntity | None:
         """Mock get entity details for testing."""
         mock_entities = {
             "lily": LightRAGEntity(
@@ -399,6 +424,6 @@ class LightRAGClient:
 
         return mock_entities.get(entity_name.lower())
 
-    def _mock_get_entity_types(self) -> List[str]:
+    def _mock_get_entity_types(self) -> list[str]:
         """Mock get entity types for testing."""
         return ["character", "location", "item", "event", "organization"]

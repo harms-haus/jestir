@@ -1,14 +1,16 @@
 """Integration tests for LightRAG API client."""
 
-import pytest
 import asyncio
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
+
+import pytest
+
+from jestir.models.api_config import LightRAGAPIConfig
 from jestir.services.lightrag_client import (
     LightRAGClient,
     LightRAGEntity,
     LightRAGSearchResult,
 )
-from jestir.models.api_config import LightRAGAPIConfig
 
 
 class TestLightRAGClient:
@@ -40,7 +42,8 @@ class TestLightRAGClient:
 
         # Check that we get the expected mock dragon entity
         dragon_entity = next(
-            (e for e in result.entities if "dragon" in e.name.lower()), None
+            (e for e in result.entities if "dragon" in e.name.lower()),
+            None,
         )
         assert dragon_entity is not None
         assert dragon_entity.entity_type == "character"
@@ -85,7 +88,7 @@ class TestLightRAGClient:
     def test_fuzzy_search_entities(self, client):
         """Test fuzzy search for entities."""
         results = asyncio.run(
-            client.fuzzy_search_entities("lily", entity_type="character")
+            client.fuzzy_search_entities("lily", entity_type="character"),
         )
 
         assert isinstance(results, list)
@@ -102,7 +105,7 @@ class TestLightRAGClient:
 
         for variation in variations:
             results = asyncio.run(
-                client.fuzzy_search_entities(variation, entity_type="character")
+                client.fuzzy_search_entities(variation, entity_type="character"),
             )
             # Should find at least one result for exact matches
             assert len(results) > 0
@@ -166,7 +169,7 @@ class TestLightRAGClient:
         """Test parsing of entity data from API responses."""
         # Test the internal parsing methods
         mock_response = {
-            "response": "Lily is a curious 8-year-old girl who loves adventures."
+            "response": "Lily is a curious 8-year-old girl who loves adventures.",
         }
 
         entity = client._parse_entity_details(mock_response, "Lily")
@@ -228,7 +231,10 @@ class TestLightRAGSearchResult:
         ]
 
         result = LightRAGSearchResult(
-            entities=entities, total_count=2, query="test query", mode="local"
+            entities=entities,
+            total_count=2,
+            query="test query",
+            mode="local",
         )
 
         assert len(result.entities) == 2

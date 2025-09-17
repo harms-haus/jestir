@@ -6,14 +6,13 @@ Provides dependency vulnerability scanning and code security analysis
 using safety and bandit tools.
 """
 
+import json
 import subprocess
 import sys
-import json
 from pathlib import Path
-from typing import List, Tuple, Dict, Any
 
 
-def run_command(cmd: List[str], description: str) -> Tuple[bool, str]:
+def run_command(cmd: list[str], description: str) -> tuple[bool, str]:
     """Run a command and return success status and output."""
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
@@ -31,7 +30,8 @@ def audit_dependencies() -> None:
 
     # Check if pip-audit is available
     success, output = run_command(
-        ["pip-audit", "--version"], "Checking pip-audit version"
+        ["pip-audit", "--version"],
+        "Checking pip-audit version",
     )
     if not success:
         print("❌ pip-audit not found. Please install with: uv sync")
@@ -39,7 +39,8 @@ def audit_dependencies() -> None:
 
     # Run pip-audit check
     success, output = run_command(
-        ["pip-audit", "--format=json"], "Running pip-audit vulnerability scan"
+        ["pip-audit", "--format=json"],
+        "Running pip-audit vulnerability scan",
     )
 
     if success:
@@ -116,7 +117,7 @@ def audit_code() -> None:
                     print(f"    Test: {test_name}")
                     print(f"    Confidence: {confidence}")
                     print(
-                        f"    Description: {issue.get('issue_text', 'No description')}"
+                        f"    Description: {issue.get('issue_text', 'No description')}",
                     )
                     print()
         except json.JSONDecodeError:
@@ -126,14 +127,13 @@ def audit_code() -> None:
             else:
                 print("⚠️  Security issues found in code:")
                 print(output)
+    # Check if it's just a warning about no issues
+    elif "No issues identified" in output or "No issues found" in output:
+        print("✅ No security issues found in code")
     else:
-        # Check if it's just a warning about no issues
-        if "No issues identified" in output or "No issues found" in output:
-            print("✅ No security issues found in code")
-        else:
-            print("❌ Bandit scan failed:")
-            print(output)
-            sys.exit(1)
+        print("❌ Bandit scan failed:")
+        print(output)
+        sys.exit(1)
 
 
 def audit_all() -> None:
@@ -159,7 +159,10 @@ def generate_security_report() -> None:
 
     report = {
         "timestamp": subprocess.run(
-            ["date"], capture_output=True, text=True
+            ["date"],
+            check=False,
+            capture_output=True,
+            text=True,
         ).stdout.strip(),
         "dependencies": {},
         "code": {},
@@ -178,7 +181,8 @@ def generate_security_report() -> None:
     # Code audit
     src_path = Path(__file__).parent
     success, output = run_command(
-        ["bandit", "-r", str(src_path), "-f", "json"], "Code audit"
+        ["bandit", "-r", str(src_path), "-f", "json"],
+        "Code audit",
     )
     if success:
         try:
@@ -199,7 +203,7 @@ def generate_security_report() -> None:
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print(
-            "Usage: python -m jestir.security <audit-deps|audit-code|audit-all|report>"
+            "Usage: python -m jestir.security <audit-deps|audit-code|audit-all|report>",
         )
         sys.exit(1)
 

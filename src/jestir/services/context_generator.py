@@ -1,15 +1,16 @@
 """Context generation service using OpenAI for entity and relationship extraction."""
 
-import json
-import re
 import asyncio
+import json
 import logging
-from typing import List, Dict, Any, Optional
+import re
+
 from openai import OpenAI
-from ..models.story_context import StoryContext
+
+from ..models.api_config import ExtractionAPIConfig, LightRAGAPIConfig
 from ..models.entity import Entity
 from ..models.relationship import Relationship
-from ..models.api_config import ExtractionAPIConfig, LightRAGAPIConfig
+from ..models.story_context import StoryContext
 from .lightrag_client import LightRAGClient
 from .template_loader import TemplateLoader
 
@@ -22,9 +23,9 @@ class ContextGenerator:
 
     def __init__(
         self,
-        config: Optional[ExtractionAPIConfig] = None,
-        lightrag_config: Optional[LightRAGAPIConfig] = None,
-        template_loader: Optional[TemplateLoader] = None,
+        config: ExtractionAPIConfig | None = None,
+        lightrag_config: LightRAGAPIConfig | None = None,
+        template_loader: TemplateLoader | None = None,
     ):
         """Initialize the context generator with OpenAI and LightRAG configuration."""
         self.config = config or self._load_config_from_env()
@@ -40,7 +41,8 @@ class ContextGenerator:
         return ExtractionAPIConfig(
             api_key=os.getenv("OPENAI_EXTRACTION_API_KEY", ""),
             base_url=os.getenv(
-                "OPENAI_EXTRACTION_BASE_URL", "https://api.openai.com/v1"
+                "OPENAI_EXTRACTION_BASE_URL",
+                "https://api.openai.com/v1",
             ),
             model=os.getenv("OPENAI_EXTRACTION_MODEL", "gpt-4o-mini"),
             max_tokens=int(os.getenv("OPENAI_EXTRACTION_MAX_TOKENS", "1000")),
@@ -91,8 +93,9 @@ class ContextGenerator:
         return context
 
     def _extract_entities_and_relationships(
-        self, input_text: str
-    ) -> tuple[List[Entity], List[Relationship]]:
+        self,
+        input_text: str,
+    ) -> tuple[list[Entity], list[Relationship]]:
         """Extract entities and relationships using OpenAI."""
         prompt = self._build_extraction_prompt(input_text)
 
@@ -124,7 +127,7 @@ class ContextGenerator:
         try:
             # Load system prompt template
             system_prompt = self.template_loader.load_system_prompt(
-                "context_extraction"
+                "context_extraction",
             )
 
             # Load user prompt template and substitute variables
@@ -180,8 +183,9 @@ Extract all mentioned characters, locations, items, and their relationships. Mar
 """
 
     def _parse_extraction_response(
-        self, content: str
-    ) -> tuple[List[Entity], List[Relationship]]:
+        self,
+        content: str,
+    ) -> tuple[list[Entity], list[Relationship]]:
         """Parse the OpenAI response to extract entities and relationships."""
         try:
             # Extract JSON from response
@@ -208,11 +212,12 @@ Extract all mentioned characters, locations, items, and their relationships. Mar
             return self._fallback_extraction(content)
 
     def _fallback_extraction(
-        self, input_text: str
-    ) -> tuple[List[Entity], List[Relationship]]:
+        self,
+        input_text: str,
+    ) -> tuple[list[Entity], list[Relationship]]:
         """Fallback extraction when OpenAI fails."""
-        entities: List[Entity] = []
-        relationships: List[Relationship] = []
+        entities: list[Entity] = []
+        relationships: list[Relationship] = []
 
         # Basic entity extraction using simple patterns
         words = input_text.split()
@@ -234,7 +239,7 @@ Extract all mentioned characters, locations, items, and their relationships. Mar
 
         return entities, relationships
 
-    def _extract_plot_points(self, input_text: str) -> List[str]:
+    def _extract_plot_points(self, input_text: str) -> list[str]:
         """Extract key plot points from the input."""
         # Simple plot point extraction
         plot_points = []
@@ -256,10 +261,11 @@ Extract all mentioned characters, locations, items, and their relationships. Mar
         return plot_points
 
     async def _enrich_entities_with_lightrag(
-        self, entities: List[Entity]
-    ) -> List[Entity]:
+        self,
+        entities: list[Entity],
+    ) -> list[Entity]:
         """Enrich entities with existing data from LightRAG API."""
-        enriched_entities: List[Entity] = []
+        enriched_entities: list[Entity] = []
 
         if not entities:
             logger.debug("No entities to enrich with LightRAG data")
@@ -270,19 +276,20 @@ Extract all mentioned characters, locations, items, and their relationships. Mar
         for entity in entities:
             try:
                 logger.debug(
-                    f"Searching LightRAG for entity: {entity.name} (type: {entity.type})"
+                    f"Searching LightRAG for entity: {entity.name} (type: {entity.type})",
                 )
 
                 # Search for existing entity in LightRAG
                 search_results = await self.lightrag_client.fuzzy_search_entities(
-                    entity.name, entity_type=entity.type
+                    entity.name,
+                    entity_type=entity.type,
                 )
 
                 if search_results:
                     # Found existing entity, update with LightRAG data
                     lightrag_entity = search_results[0]  # Take the best match
                     logger.info(
-                        f"Found existing entity in LightRAG: {lightrag_entity.name} -> {entity.name}"
+                        f"Found existing entity in LightRAG: {lightrag_entity.name} -> {entity.name}",
                     )
 
                     # Update entity with existing data
@@ -294,7 +301,7 @@ Extract all mentioned characters, locations, items, and their relationships. Mar
                         original_desc = entity.description
                         entity.description = lightrag_entity.description
                         logger.debug(
-                            f"Enhanced description for {entity.name}: '{original_desc}' -> '{entity.description[:100]}...'"
+                            f"Enhanced description for {entity.name}: '{original_desc}' -> '{entity.description[:100]}...'",
                         )
 
                     # Merge properties
@@ -304,7 +311,7 @@ Extract all mentioned characters, locations, items, and their relationships. Mar
                         original_props = entity.properties.copy()
                         entity.properties.update(lightrag_entity.properties)
                         logger.debug(
-                            f"Updated properties for {entity.name}: {original_props} -> {entity.properties}"
+                            f"Updated properties for {entity.name}: {original_props} -> {entity.properties}",
                         )
 
                     # Add relationships if available
@@ -314,17 +321,17 @@ Extract all mentioned characters, locations, items, and their relationships. Mar
                             lightrag_entity.relationships
                         )
                         logger.debug(
-                            f"Added relationships for {entity.name}: {lightrag_entity.relationships}"
+                            f"Added relationships for {entity.name}: {lightrag_entity.relationships}",
                         )
                 else:
                     logger.debug(
-                        f"No existing entity found in LightRAG for: {entity.name}"
+                        f"No existing entity found in LightRAG for: {entity.name}",
                     )
 
             except Exception as e:
                 # If LightRAG lookup fails, keep entity as is
                 logger.warning(
-                    f"LightRAG lookup failed for entity '{entity.name}': {e}"
+                    f"LightRAG lookup failed for entity '{entity.name}': {e}",
                 )
                 logger.debug(f"Continuing with original entity data for: {entity.name}")
 
@@ -333,23 +340,25 @@ Extract all mentioned characters, locations, items, and their relationships. Mar
         # Log summary
         existing_count = sum(1 for e in enriched_entities if e.existing)
         logger.info(
-            f"Entity enrichment complete: {existing_count}/{len(entities)} entities found in LightRAG"
+            f"Entity enrichment complete: {existing_count}/{len(entities)} entities found in LightRAG",
         )
 
         return enriched_entities
 
     def load_context_from_file(self, file_path: str) -> StoryContext:
         """Load an existing context from a YAML file."""
-        import yaml
-        from pathlib import Path
 
-        with open(file_path, "r", encoding="utf-8") as f:
+        import yaml
+
+        with open(file_path, encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
         return StoryContext(**data)
 
     def update_context(
-        self, input_text: str, existing_context: StoryContext
+        self,
+        input_text: str,
+        existing_context: StoryContext,
     ) -> StoryContext:
         """Update an existing context with new natural language input."""
         # Add the new user input
@@ -357,13 +366,13 @@ Extract all mentioned characters, locations, items, and their relationships. Mar
 
         # Extract new entities and relationships from the input
         new_entities, new_relationships = self._extract_entities_and_relationships(
-            input_text
+            input_text,
         )
 
         # Check for existing entities in LightRAG
         try:
             new_entities = asyncio.run(
-                self._enrich_entities_with_lightrag(new_entities)
+                self._enrich_entities_with_lightrag(new_entities),
             )
         except Exception as e:
             logger.error(f"Failed to enrich new entities with LightRAG data: {e}")
@@ -392,8 +401,10 @@ Extract all mentioned characters, locations, items, and their relationships. Mar
         return existing_context
 
     def _find_existing_entity(
-        self, new_entity: Entity, context: StoryContext
-    ) -> Optional[Entity]:
+        self,
+        new_entity: Entity,
+        context: StoryContext,
+    ) -> Entity | None:
         """Find an existing entity that matches the new entity."""
         for existing_entity in context.entities.values():
             if (

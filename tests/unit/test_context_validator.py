@@ -1,16 +1,16 @@
 """Tests for context validation service."""
 
+import os
+import tempfile
+from unittest.mock import AsyncMock, Mock, patch
+
 import pytest
 import yaml
-import tempfile
-import os
-from pathlib import Path
-from unittest.mock import Mock, patch, AsyncMock
-from jestir.services.context_validator import ContextValidator, ValidationResult
-from jestir.models.story_context import StoryContext
+
 from jestir.models.entity import Entity
 from jestir.models.relationship import Relationship
-from jestir.models.api_config import LightRAGAPIConfig
+from jestir.models.story_context import StoryContext
+from jestir.services.context_validator import ContextValidator
 
 
 class TestContextValidator:
@@ -64,7 +64,7 @@ class TestContextValidator:
                     object="loc_001",
                     location="Magic Forest",
                     mentioned_at=["initial_request"],
-                )
+                ),
             ],
             user_inputs={"initial_request": "Lily goes to the magic forest"},
             plot_points=["Lily discovers the magic forest"],
@@ -171,7 +171,7 @@ class TestContextValidator:
                     type="character",
                     subtype="protagonist",
                     description="A brave girl",
-                )
+                ),
             },
             relationships=[],
             user_inputs={},
@@ -199,7 +199,7 @@ class TestContextValidator:
                     type="invalid_type",  # Invalid type
                     subtype="protagonist",
                     description="A brave girl",
-                )
+                ),
             },
             relationships=[],
             user_inputs={},
@@ -227,7 +227,7 @@ class TestContextValidator:
                     type="character",
                     subtype="protagonist",
                     description="A brave girl",
-                )
+                ),
             },
             relationships=[
                 Relationship(
@@ -235,7 +235,7 @@ class TestContextValidator:
                     subject="char_001",
                     object="nonexistent_entity",  # Non-existent entity
                     location="somewhere",
-                )
+                ),
             ],
             user_inputs={},
             plot_points=[],
@@ -262,7 +262,7 @@ class TestContextValidator:
                     type="character",
                     subtype="supporting",  # Not protagonist
                     description="A brave girl",
-                )
+                ),
             },
             relationships=[],
             user_inputs={},
@@ -290,7 +290,7 @@ class TestContextValidator:
                     type="character",
                     subtype="protagonist",
                     description="A brave girl",
-                )
+                ),
             },
             relationships=[],
             user_inputs={},
@@ -339,7 +339,7 @@ class TestContextValidator:
 
         with patch.object(self.validator, "lightrag_client", mock_client):
             errors, warnings = await self.validator._validate_lightrag_references(
-                self.valid_context
+                self.valid_context,
             )
             assert len(errors) == 0
             assert len(warnings) > 0  # Should warn about entities not found in LightRAG
@@ -355,7 +355,7 @@ class TestContextValidator:
                 mock_entity.entity_type = "character"
                 mock_entity.name = "Lily"
                 return mock_entity
-            elif entity_name == "Magic Forest":
+            if entity_name == "Magic Forest":
                 mock_entity = Mock()
                 mock_entity.entity_type = "location"
                 mock_entity.name = "Magic Forest"
@@ -367,7 +367,7 @@ class TestContextValidator:
 
         with patch.object(self.validator, "lightrag_client", mock_client):
             errors, warnings = await self.validator._validate_lightrag_references(
-                self.valid_context
+                self.valid_context,
             )
             assert len(errors) == 0
             assert (
@@ -387,7 +387,7 @@ class TestContextValidator:
 
         with patch.object(self.validator, "lightrag_client", mock_client):
             errors, warnings = await self.validator._validate_lightrag_references(
-                self.valid_context
+                self.valid_context,
             )
             assert len(errors) == 0
             assert len(warnings) > 0
@@ -419,7 +419,9 @@ class TestContextValidator:
         errors = ["Missing required field: metadata", "Missing required setting: genre"]
 
         fixed_issues = self.validator._attempt_auto_fix(
-            self.valid_context, errors, "test.yaml"
+            self.valid_context,
+            errors,
+            "test.yaml",
         )
         assert len(fixed_issues) > 0
         assert any("Could potentially auto-fix" in issue for issue in fixed_issues)

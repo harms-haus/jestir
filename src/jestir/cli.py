@@ -1,28 +1,28 @@
 """Command-line interface for Jestir."""
 
-import click
-import yaml
-import os
 import asyncio
 import json
+import os
 from pathlib import Path
+
+import click
+import yaml
 from dotenv import load_dotenv
 
 # Load environment variables from .env file if it exists
 load_dotenv()
+from .models.api_config import LightRAGAPIConfig
 from .services.context_generator import ContextGenerator
+from .services.lightrag_client import LightRAGClient
 from .services.outline_generator import OutlineGenerator
 from .services.story_writer import StoryWriter
-from .services.lightrag_client import LightRAGClient
 from .services.template_loader import TemplateLoader
-from .models.api_config import LightRAGAPIConfig
 
 
 @click.group()
 @click.version_option()
 def main():
     """Jestir: AI-powered bedtime story generator with 3-stage pipeline."""
-    pass
 
 
 @main.command()
@@ -41,7 +41,7 @@ def context(input_text, output):
                 # Load existing context
                 generator = ContextGenerator()
                 existing_context = generator.load_context_from_file(
-                    default_context_file
+                    default_context_file,
                 )
                 click.echo("Loading existing context for updates...")
             except Exception as e:
@@ -77,12 +77,12 @@ def context(input_text, output):
         action = "Updated" if existing_context else "Generated"
         click.echo(f"Context {action.lower()} successfully: {output}")
         click.echo(
-            f"Found {len(updated_context.entities)} entities and {len(updated_context.relationships)} relationships"
+            f"Found {len(updated_context.entities)} entities and {len(updated_context.relationships)} relationships",
         )
         click.echo(f"Plot points: {len(updated_context.plot_points)}")
 
     except FileNotFoundError as e:
-        click.echo(f"❌ File Error: Cannot access file - {str(e)}", err=True)
+        click.echo(f"❌ File Error: Cannot access file - {e!s}", err=True)
         click.echo(
             "💡 Tip: Make sure you have write permissions to the output directory",
             err=True,
@@ -90,7 +90,8 @@ def context(input_text, output):
         raise click.Abort()
     except PermissionError as e:
         click.echo(
-            f"❌ Permission Error: Cannot write to output file - {str(e)}", err=True
+            f"❌ Permission Error: Cannot write to output file - {e!s}",
+            err=True,
         )
         click.echo(
             "💡 Tip: Check file permissions or try a different output directory",
@@ -100,24 +101,25 @@ def context(input_text, output):
     except Exception as e:
         error_msg = str(e).lower()
         if "api" in error_msg or "openai" in error_msg:
-            click.echo(f"❌ API Error: {str(e)}", err=True)
+            click.echo(f"❌ API Error: {e!s}", err=True)
             click.echo("💡 Troubleshooting:", err=True)
             click.echo(
                 "   • Check your OPENAI_EXTRACTION_API_KEY environment variable",
                 err=True,
             )
             click.echo(
-                "   • Verify your OpenAI account has sufficient credits", err=True
+                "   • Verify your OpenAI account has sufficient credits",
+                err=True,
             )
             click.echo("   • Check your internet connection", err=True)
         elif "template" in error_msg:
-            click.echo(f"❌ Template Error: {str(e)}", err=True)
+            click.echo(f"❌ Template Error: {e!s}", err=True)
             click.echo(
                 "💡 Tip: Run 'jestir validate-templates' to check template files",
                 err=True,
             )
         else:
-            click.echo(f"❌ Unexpected Error: {str(e)}", err=True)
+            click.echo(f"❌ Unexpected Error: {e!s}", err=True)
             click.echo(
                 "💡 Tip: Try running with a simpler input text or check the logs",
                 err=True,
@@ -160,12 +162,12 @@ def context_new(input_text, output):
 
         click.echo(f"Context generated successfully: {output}")
         click.echo(
-            f"Found {len(context.entities)} entities and {len(context.relationships)} relationships"
+            f"Found {len(context.entities)} entities and {len(context.relationships)} relationships",
         )
         click.echo(f"Plot points: {len(context.plot_points)}")
 
     except FileNotFoundError as e:
-        click.echo(f"❌ File Error: Cannot access file - {str(e)}", err=True)
+        click.echo(f"❌ File Error: Cannot access file - {e!s}", err=True)
         click.echo(
             "💡 Tip: Make sure you have write permissions to the output directory",
             err=True,
@@ -173,7 +175,8 @@ def context_new(input_text, output):
         raise click.Abort()
     except PermissionError as e:
         click.echo(
-            f"❌ Permission Error: Cannot write to output file - {str(e)}", err=True
+            f"❌ Permission Error: Cannot write to output file - {e!s}",
+            err=True,
         )
         click.echo(
             "💡 Tip: Check file permissions or try a different output directory",
@@ -183,24 +186,25 @@ def context_new(input_text, output):
     except Exception as e:
         error_msg = str(e).lower()
         if "api" in error_msg or "openai" in error_msg:
-            click.echo(f"❌ API Error: {str(e)}", err=True)
+            click.echo(f"❌ API Error: {e!s}", err=True)
             click.echo("💡 Troubleshooting:", err=True)
             click.echo(
                 "   • Check your OPENAI_EXTRACTION_API_KEY environment variable",
                 err=True,
             )
             click.echo(
-                "   • Verify your OpenAI account has sufficient credits", err=True
+                "   • Verify your OpenAI account has sufficient credits",
+                err=True,
             )
             click.echo("   • Check your internet connection", err=True)
         elif "template" in error_msg:
-            click.echo(f"❌ Template Error: {str(e)}", err=True)
+            click.echo(f"❌ Template Error: {e!s}", err=True)
             click.echo(
                 "💡 Tip: Run 'jestir validate-templates' to check template files",
                 err=True,
             )
         else:
-            click.echo(f"❌ Unexpected Error: {str(e)}", err=True)
+            click.echo(f"❌ Unexpected Error: {e!s}", err=True)
             click.echo(
                 "💡 Tip: Try running with a simpler input text or check the logs",
                 err=True,
@@ -251,18 +255,19 @@ def outline(context_file, output):
         click.echo(f"Context file updated: {context_file}")
 
     except FileNotFoundError as e:
-        click.echo(f"❌ File Not Found: {str(e)}", err=True)
+        click.echo(f"❌ File Not Found: {e!s}", err=True)
         click.echo("💡 Troubleshooting:", err=True)
         click.echo(f"   • Make sure the context file '{context_file}' exists", err=True)
         click.echo(
-            f"   • Generate a context file first: 'jestir context \"your story idea\"'",
+            "   • Generate a context file first: 'jestir context \"your story idea\"'",
             err=True,
         )
-        click.echo(f"   • Check the file path is correct", err=True)
+        click.echo("   • Check the file path is correct", err=True)
         raise click.Abort()
     except PermissionError as e:
         click.echo(
-            f"❌ Permission Error: Cannot write to output file - {str(e)}", err=True
+            f"❌ Permission Error: Cannot write to output file - {e!s}",
+            err=True,
         )
         click.echo(
             "💡 Tip: Check file permissions or try a different output directory",
@@ -272,26 +277,31 @@ def outline(context_file, output):
     except Exception as e:
         error_msg = str(e).lower()
         if "api" in error_msg or "openai" in error_msg:
-            click.echo(f"❌ API Error: {str(e)}", err=True)
+            click.echo(f"❌ API Error: {e!s}", err=True)
             click.echo("💡 Troubleshooting:", err=True)
             click.echo(
-                "   • Check your OPENAI_CREATIVE_API_KEY environment variable", err=True
+                "   • Check your OPENAI_CREATIVE_API_KEY environment variable",
+                err=True,
             )
             click.echo(
-                "   • Verify your OpenAI account has sufficient credits", err=True
+                "   • Verify your OpenAI account has sufficient credits",
+                err=True,
             )
             click.echo("   • Check your internet connection", err=True)
         elif "yaml" in error_msg or "parse" in error_msg:
             click.echo(
-                f"❌ Context File Error: Invalid YAML format - {str(e)}", err=True
+                f"❌ Context File Error: Invalid YAML format - {e!s}",
+                err=True,
             )
             click.echo(
-                f"💡 Tip: Check that '{context_file}' is a valid YAML file", err=True
+                f"💡 Tip: Check that '{context_file}' is a valid YAML file",
+                err=True,
             )
         else:
-            click.echo(f"❌ Unexpected Error: {str(e)}", err=True)
+            click.echo(f"❌ Unexpected Error: {e!s}", err=True)
             click.echo(
-                "💡 Tip: Check that your context file is valid and complete", err=True
+                "💡 Tip: Check that your context file is valid and complete",
+                err=True,
             )
         raise click.Abort()
 
@@ -300,7 +310,10 @@ def outline(context_file, output):
 @click.argument("outline_file")
 @click.option("--output", "-o", default="story.md", help="Output story file")
 @click.option(
-    "--context", "-c", default="context.yaml", help="Context file to load and update"
+    "--context",
+    "-c",
+    default="context.yaml",
+    help="Context file to load and update",
 )
 def write(outline_file, output, context):
     """Generate final story from outline file."""
@@ -354,22 +367,25 @@ def write(outline_file, output, context):
         click.echo("💡 Troubleshooting:", err=True)
         if outline_file in error_str:
             click.echo(
-                f"   • Generate an outline first: 'jestir outline {context}'", err=True
+                f"   • Generate an outline first: 'jestir outline {context}'",
+                err=True,
             )
             click.echo(
-                f"   • Make sure the outline file '{outline_file}' exists", err=True
+                f"   • Make sure the outline file '{outline_file}' exists",
+                err=True,
             )
         elif context in error_str:
             click.echo(
-                f"   • Generate a context file first: 'jestir context \"your story idea\"'",
+                "   • Generate a context file first: 'jestir context \"your story idea\"'",
                 err=True,
             )
             click.echo(f"   • Make sure the context file '{context}' exists", err=True)
-        click.echo(f"   • Check the file paths are correct", err=True)
+        click.echo("   • Check the file paths are correct", err=True)
         raise click.Abort()
     except PermissionError as e:
         click.echo(
-            f"❌ Permission Error: Cannot write to output file - {str(e)}", err=True
+            f"❌ Permission Error: Cannot write to output file - {e!s}",
+            err=True,
         )
         click.echo(
             "💡 Tip: Check file permissions or try a different output directory",
@@ -379,22 +395,25 @@ def write(outline_file, output, context):
     except Exception as e:
         error_msg = str(e).lower()
         if "api" in error_msg or "openai" in error_msg:
-            click.echo(f"❌ API Error: {str(e)}", err=True)
+            click.echo(f"❌ API Error: {e!s}", err=True)
             click.echo("💡 Troubleshooting:", err=True)
             click.echo(
-                "   • Check your OPENAI_CREATIVE_API_KEY environment variable", err=True
+                "   • Check your OPENAI_CREATIVE_API_KEY environment variable",
+                err=True,
             )
             click.echo(
-                "   • Verify your OpenAI account has sufficient credits", err=True
+                "   • Verify your OpenAI account has sufficient credits",
+                err=True,
             )
             click.echo("   • Check your internet connection", err=True)
         elif "yaml" in error_msg or "parse" in error_msg:
             click.echo(
-                f"❌ File Format Error: Invalid YAML format - {str(e)}", err=True
+                f"❌ File Format Error: Invalid YAML format - {e!s}",
+                err=True,
             )
-            click.echo(f"💡 Tip: Check that your files are valid YAML format", err=True)
+            click.echo("💡 Tip: Check that your files are valid YAML format", err=True)
         else:
-            click.echo(f"❌ Unexpected Error: {str(e)}", err=True)
+            click.echo(f"❌ Unexpected Error: {e!s}", err=True)
             click.echo(
                 "💡 Tip: Check that your outline and context files are valid and complete",
                 err=True,
@@ -467,9 +486,9 @@ def validate_templates(verbose, fix):
                         click.echo(f"  ❌ {template_name}.txt - Empty file")
 
             except Exception as e:
-                issues_found.append(f"System prompt {template_name}.txt - {str(e)}")
+                issues_found.append(f"System prompt {template_name}.txt - {e!s}")
                 if verbose:
-                    click.echo(f"  ❌ {template_name}.txt - Error: {str(e)}")
+                    click.echo(f"  ❌ {template_name}.txt - Error: {e!s}")
 
         # Validate user prompts
         click.echo("\n📝 Validating user prompts...")
@@ -482,40 +501,40 @@ def validate_templates(verbose, fix):
                 # Check for required variables
                 if template_name in required_vars:
                     validation = loader.validate_template(
-                        template_path, required_vars[template_name]
+                        template_path,
+                        required_vars[template_name],
                     )
                     if validation["valid"]:
                         valid_templates += 1
                         if verbose:
                             click.echo(
-                                f"  ✅ {template_name}.txt - All required variables present"
+                                f"  ✅ {template_name}.txt - All required variables present",
                             )
                     else:
                         missing = ", ".join(validation["missing_vars"])
                         issues_found.append(
-                            f"User prompt {template_name}.txt missing variables: {missing}"
+                            f"User prompt {template_name}.txt missing variables: {missing}",
                         )
                         if verbose:
                             click.echo(f"  ❌ {template_name}.txt - Missing: {missing}")
+                # Just check basic syntax
+                elif "{{" in content and "}}" in content:
+                    valid_templates += 1
+                    if verbose:
+                        click.echo(f"  ✅ {template_name}.txt - OK")
                 else:
-                    # Just check basic syntax
-                    if "{{" in content and "}}" in content:
-                        valid_templates += 1
-                        if verbose:
-                            click.echo(f"  ✅ {template_name}.txt - OK")
-                    else:
-                        issues_found.append(
-                            f"User prompt {template_name}.txt has no template variables"
+                    issues_found.append(
+                        f"User prompt {template_name}.txt has no template variables",
+                    )
+                    if verbose:
+                        click.echo(
+                            f"  ⚠️  {template_name}.txt - No template variables",
                         )
-                        if verbose:
-                            click.echo(
-                                f"  ⚠️  {template_name}.txt - No template variables"
-                            )
 
             except Exception as e:
-                issues_found.append(f"User prompt {template_name}.txt - {str(e)}")
+                issues_found.append(f"User prompt {template_name}.txt - {e!s}")
                 if verbose:
-                    click.echo(f"  ❌ {template_name}.txt - Error: {str(e)}")
+                    click.echo(f"  ❌ {template_name}.txt - Error: {e!s}")
 
         # Validate include templates
         click.echo("\n🧩 Validating include templates...")
@@ -532,60 +551,63 @@ def validate_templates(verbose, fix):
                         click.echo(f"  ✅ {template_name}.txt - OK")
                 else:
                     issues_found.append(
-                        f"Include template {template_name}.txt has no template variables"
+                        f"Include template {template_name}.txt has no template variables",
                     )
                     if verbose:
                         click.echo(f"  ⚠️  {template_name}.txt - No template variables")
 
             except Exception as e:
-                issues_found.append(f"Include template {template_name}.txt - {str(e)}")
+                issues_found.append(f"Include template {template_name}.txt - {e!s}")
                 if verbose:
-                    click.echo(f"  ❌ {template_name}.txt - Error: {str(e)}")
+                    click.echo(f"  ❌ {template_name}.txt - Error: {e!s}")
 
         # Summary
-        click.echo(f"\n📊 Validation Summary:")
+        click.echo("\n📊 Validation Summary:")
         click.echo(f"  Total templates: {total_templates}")
         click.echo(f"  Valid templates: {valid_templates}")
         click.echo(f"  Issues found: {len(issues_found)}")
 
         if issues_found:
-            click.echo(f"\n❌ Issues found:")
+            click.echo("\n❌ Issues found:")
             for issue in issues_found:
                 click.echo(f"  • {issue}")
 
             if fix:
-                click.echo(f"\n🔧 Fix suggestions:")
-                click.echo(f"  • Check template syntax ({{{{variable}}}})")
-                click.echo(f"  • Ensure all required variables are present")
-                click.echo(f"  • Verify file paths and permissions")
-                click.echo(f"  • Check for typos in variable names")
+                click.echo("\n🔧 Fix suggestions:")
+                click.echo("  • Check template syntax ({{variable}})")
+                click.echo("  • Ensure all required variables are present")
+                click.echo("  • Verify file paths and permissions")
+                click.echo("  • Check for typos in variable names")
 
             raise click.Abort()
-        else:
-            click.echo(f"\n✅ All templates are valid!")
+        click.echo("\n✅ All templates are valid!")
 
     except FileNotFoundError as e:
-        click.echo(f"❌ Template Directory Not Found: {str(e)}", err=True)
+        click.echo(f"❌ Template Directory Not Found: {e!s}", err=True)
         click.echo("💡 Troubleshooting:", err=True)
         click.echo(
-            "   • Make sure you're running from the project root directory", err=True
+            "   • Make sure you're running from the project root directory",
+            err=True,
         )
         click.echo("   • Verify the templates/ directory exists", err=True)
         click.echo("   • Check that template files are properly installed", err=True)
         raise click.Abort()
     except PermissionError as e:
         click.echo(
-            f"❌ Permission Error: Cannot read template files - {str(e)}", err=True
+            f"❌ Permission Error: Cannot read template files - {e!s}",
+            err=True,
         )
         click.echo(
-            "💡 Tip: Check file permissions in the templates/ directory", err=True
+            "💡 Tip: Check file permissions in the templates/ directory",
+            err=True,
         )
         raise click.Abort()
     except Exception as e:
-        click.echo(f"❌ Template Validation Error: {str(e)}", err=True)
+        click.echo(f"❌ Template Validation Error: {e!s}", err=True)
         click.echo("💡 Troubleshooting:", err=True)
         click.echo(
-            "   • Check that all template files are properly formatted", err=True
+            "   • Check that all template files are properly formatted",
+            err=True,
         )
         click.echo("   • Verify template syntax uses {{variable}} format", err=True)
         click.echo("   • Make sure templates/ directory structure is correct", err=True)
@@ -609,7 +631,9 @@ def validate(context_file, verbose, fix):
 
         # Load and validate context
         validation_result = validator.validate_context_file(
-            context_file, verbose=verbose, auto_fix=fix
+            context_file,
+            verbose=verbose,
+            auto_fix=fix,
         )
 
         # Display results
@@ -632,32 +656,35 @@ def validate(context_file, verbose, fix):
             raise click.Abort()
 
     except FileNotFoundError as e:
-        click.echo(f"❌ File Not Found: {str(e)}", err=True)
+        click.echo(f"❌ File Not Found: {e!s}", err=True)
         click.echo("💡 Troubleshooting:", err=True)
         click.echo(f"   • Make sure the context file '{context_file}' exists", err=True)
         click.echo(
-            f"   • Generate a context file first: 'jestir context \"your story idea\"'",
+            "   • Generate a context file first: 'jestir context \"your story idea\"'",
             err=True,
         )
-        click.echo(f"   • Check the file path is correct", err=True)
+        click.echo("   • Check the file path is correct", err=True)
         raise click.Abort()
     except PermissionError as e:
-        click.echo(f"❌ Permission Error: Cannot read file - {str(e)}", err=True)
+        click.echo(f"❌ Permission Error: Cannot read file - {e!s}", err=True)
         click.echo("💡 Tip: Check file permissions", err=True)
         raise click.Abort()
     except Exception as e:
         error_msg = str(e).lower()
         if "yaml" in error_msg or "parse" in error_msg:
             click.echo(
-                f"❌ File Format Error: Invalid YAML format - {str(e)}", err=True
+                f"❌ File Format Error: Invalid YAML format - {e!s}",
+                err=True,
             )
             click.echo(
-                "💡 Tip: Check that the context file is valid YAML format", err=True
+                "💡 Tip: Check that the context file is valid YAML format",
+                err=True,
             )
         else:
-            click.echo(f"❌ Validation Error: {str(e)}", err=True)
+            click.echo(f"❌ Validation Error: {e!s}", err=True)
             click.echo(
-                "💡 Tip: Check that your context file is properly formatted", err=True
+                "💡 Tip: Check that your context file is properly formatted",
+                err=True,
             )
         raise click.Abort()
 
@@ -712,7 +739,7 @@ def search(entity_type, query, filter_type, limit, page, output_format, export):
         total_limit = offset + limit
 
         result = asyncio.run(
-            client.search_entities(search_query, lightrag_type, "mix", total_limit)
+            client.search_entities(search_query, lightrag_type, "mix", total_limit),
         )
 
         # Apply pagination to results
@@ -742,38 +769,35 @@ def search(entity_type, query, filter_type, limit, page, output_format, export):
             click.echo(json.dumps(output_data, indent=2))
         elif output_format == "yaml":
             click.echo(yaml.dump(output_data, default_flow_style=False))
-        else:  # table format
-            if paginated_entities:
-                page_info = (
-                    f" (page {page} of {total_pages})" if total_pages > 1 else ""
-                )
-                click.echo(f"\nFound {result.total_count} {entity_type}{page_info}:")
-                click.echo("-" * 80)
-                for i, entity in enumerate(paginated_entities, offset + 1):
-                    click.echo(f"{i}. {entity.name} ({entity.entity_type})")
-                    if entity.description:
-                        desc = (
-                            entity.description[:100] + "..."
-                            if len(entity.description) > 100
-                            else entity.description
-                        )
-                        click.echo(f"   Description: {desc}")
-                    if entity.properties:
-                        props = ", ".join(
-                            [f"{k}: {v}" for k, v in entity.properties.items()]
-                        )
-                        click.echo(f"   Properties: {props}")
-                    click.echo()
-
-                # Show pagination info
-                if total_pages > 1:
-                    click.echo(
-                        f"Showing {len(paginated_entities)} of {result.total_count} results"
+        elif paginated_entities:
+            page_info = f" (page {page} of {total_pages})" if total_pages > 1 else ""
+            click.echo(f"\nFound {result.total_count} {entity_type}{page_info}:")
+            click.echo("-" * 80)
+            for i, entity in enumerate(paginated_entities, offset + 1):
+                click.echo(f"{i}. {entity.name} ({entity.entity_type})")
+                if entity.description:
+                    desc = (
+                        entity.description[:100] + "..."
+                        if len(entity.description) > 100
+                        else entity.description
                     )
-                    if page < total_pages:
-                        click.echo(f"Use --page {page + 1} to see more results")
-            else:
-                click.echo(f"No {entity_type} found.")
+                    click.echo(f"   Description: {desc}")
+                if entity.properties:
+                    props = ", ".join(
+                        [f"{k}: {v}" for k, v in entity.properties.items()],
+                    )
+                    click.echo(f"   Properties: {props}")
+                click.echo()
+
+            # Show pagination info
+            if total_pages > 1:
+                click.echo(
+                    f"Showing {len(paginated_entities)} of {result.total_count} results",
+                )
+                if page < total_pages:
+                    click.echo(f"Use --page {page + 1} to see more results")
+        else:
+            click.echo(f"No {entity_type} found.")
 
         # Export to YAML if requested
         if export:
@@ -789,7 +813,8 @@ def search(entity_type, query, filter_type, limit, page, output_format, export):
             or "refused" in error_msg
         ):
             click.echo(
-                f"❌ Connection Error: Cannot reach LightRAG API - {str(e)}", err=True
+                f"❌ Connection Error: Cannot reach LightRAG API - {e!s}",
+                err=True,
             )
             click.echo("💡 Troubleshooting:", err=True)
             click.echo(f"   • Check LIGHTRAG_BASE_URL: {config.base_url}", err=True)
@@ -797,28 +822,30 @@ def search(entity_type, query, filter_type, limit, page, output_format, export):
             click.echo("   • Check your network connection", err=True)
             click.echo("   • Try using mock mode: LIGHTRAG_MOCK_MODE=true", err=True)
         elif "unauthorized" in error_msg or "forbidden" in error_msg:
-            click.echo(f"❌ Authentication Error: {str(e)}", err=True)
+            click.echo(f"❌ Authentication Error: {e!s}", err=True)
             click.echo("💡 Troubleshooting:", err=True)
             click.echo(
-                "   • Check your LIGHTRAG_API_KEY environment variable", err=True
+                "   • Check your LIGHTRAG_API_KEY environment variable",
+                err=True,
             )
             click.echo("   • Verify the API key is valid and not expired", err=True)
         elif "invalid" in error_msg and "query" in error_msg:
-            click.echo(f"❌ Query Error: {str(e)}", err=True)
+            click.echo(f"❌ Query Error: {e!s}", err=True)
             click.echo("💡 Tips:", err=True)
-            click.echo(f"   • Try a simpler search query", err=True)
-            click.echo(f"   • Check spelling and try different keywords", err=True)
+            click.echo("   • Try a simpler search query", err=True)
+            click.echo("   • Check spelling and try different keywords", err=True)
             click.echo(
                 f"   • Use 'jestir list {entity_type}' to see all available entities",
                 err=True,
             )
         else:
-            click.echo(f"❌ Search Error: {str(e)}", err=True)
+            click.echo(f"❌ Search Error: {e!s}", err=True)
             click.echo("💡 Troubleshooting:", err=True)
-            click.echo(f"   • Try using mock mode: LIGHTRAG_MOCK_MODE=true", err=True)
-            click.echo(f"   • Check LightRAG service status", err=True)
+            click.echo("   • Try using mock mode: LIGHTRAG_MOCK_MODE=true", err=True)
+            click.echo("   • Check LightRAG service status", err=True)
             click.echo(
-                f"   • Use 'jestir lightrag test' to verify configuration", err=True
+                "   • Use 'jestir lightrag test' to verify configuration",
+                err=True,
             )
         raise click.Abort()
 
@@ -858,7 +885,7 @@ def list_entities(entity_type, filter_type, limit, page, output_format, export):
 
         click.echo(
             f"Listing {entity_type}"
-            + (f" of type '{filter_type}'" if filter_type else "")
+            + (f" of type '{filter_type}'" if filter_type else ""),
         )
 
         config = LightRAGAPIConfig(
@@ -875,7 +902,7 @@ def list_entities(entity_type, filter_type, limit, page, output_format, export):
         total_limit = offset + limit
 
         result = asyncio.run(
-            client.search_entities(search_query, lightrag_type, "mix", total_limit)
+            client.search_entities(search_query, lightrag_type, "mix", total_limit),
         )
 
         # Apply pagination to results
@@ -905,42 +932,39 @@ def list_entities(entity_type, filter_type, limit, page, output_format, export):
             click.echo(json.dumps(output_data, indent=2))
         elif output_format == "yaml":
             click.echo(yaml.dump(output_data, default_flow_style=False))
-        else:  # table format
-            if paginated_entities:
-                filter_text = f" (type: {filter_type})" if filter_type else ""
-                page_info = (
-                    f" (page {page} of {total_pages})" if total_pages > 1 else ""
-                )
-                click.echo(
-                    f"\nFound {result.total_count} {entity_type}{filter_text}{page_info}:"
-                )
-                click.echo("-" * 80)
-                for i, entity in enumerate(paginated_entities, offset + 1):
-                    click.echo(f"{i}. {entity.name} ({entity.entity_type})")
-                    if entity.description:
-                        desc = (
-                            entity.description[:100] + "..."
-                            if len(entity.description) > 100
-                            else entity.description
-                        )
-                        click.echo(f"   Description: {desc}")
-                    if entity.properties:
-                        props = ", ".join(
-                            [f"{k}: {v}" for k, v in entity.properties.items()]
-                        )
-                        click.echo(f"   Properties: {props}")
-                    click.echo()
-
-                # Show pagination info
-                if total_pages > 1:
-                    click.echo(
-                        f"Showing {len(paginated_entities)} of {result.total_count} results"
+        elif paginated_entities:
+            filter_text = f" (type: {filter_type})" if filter_type else ""
+            page_info = f" (page {page} of {total_pages})" if total_pages > 1 else ""
+            click.echo(
+                f"\nFound {result.total_count} {entity_type}{filter_text}{page_info}:",
+            )
+            click.echo("-" * 80)
+            for i, entity in enumerate(paginated_entities, offset + 1):
+                click.echo(f"{i}. {entity.name} ({entity.entity_type})")
+                if entity.description:
+                    desc = (
+                        entity.description[:100] + "..."
+                        if len(entity.description) > 100
+                        else entity.description
                     )
-                    if page < total_pages:
-                        click.echo(f"Use --page {page + 1} to see more results")
-            else:
-                filter_text = f" of type '{filter_type}'" if filter_type else ""
-                click.echo(f"No {entity_type}{filter_text} found.")
+                    click.echo(f"   Description: {desc}")
+                if entity.properties:
+                    props = ", ".join(
+                        [f"{k}: {v}" for k, v in entity.properties.items()],
+                    )
+                    click.echo(f"   Properties: {props}")
+                click.echo()
+
+            # Show pagination info
+            if total_pages > 1:
+                click.echo(
+                    f"Showing {len(paginated_entities)} of {result.total_count} results",
+                )
+                if page < total_pages:
+                    click.echo(f"Use --page {page + 1} to see more results")
+        else:
+            filter_text = f" of type '{filter_type}'" if filter_type else ""
+            click.echo(f"No {entity_type}{filter_text} found.")
 
         # Export to YAML if requested
         if export:
@@ -956,7 +980,8 @@ def list_entities(entity_type, filter_type, limit, page, output_format, export):
             or "refused" in error_msg
         ):
             click.echo(
-                f"❌ Connection Error: Cannot reach LightRAG API - {str(e)}", err=True
+                f"❌ Connection Error: Cannot reach LightRAG API - {e!s}",
+                err=True,
             )
             click.echo("💡 Troubleshooting:", err=True)
             click.echo(f"   • Check LIGHTRAG_BASE_URL: {config.base_url}", err=True)
@@ -964,18 +989,20 @@ def list_entities(entity_type, filter_type, limit, page, output_format, export):
             click.echo("   • Check your network connection", err=True)
             click.echo("   • Try using mock mode: LIGHTRAG_MOCK_MODE=true", err=True)
         elif "unauthorized" in error_msg or "forbidden" in error_msg:
-            click.echo(f"❌ Authentication Error: {str(e)}", err=True)
+            click.echo(f"❌ Authentication Error: {e!s}", err=True)
             click.echo("💡 Troubleshooting:", err=True)
             click.echo(
-                "   • Check your LIGHTRAG_API_KEY environment variable", err=True
+                "   • Check your LIGHTRAG_API_KEY environment variable",
+                err=True,
             )
             click.echo("   • Verify the API key is valid and not expired", err=True)
         else:
-            click.echo(f"❌ List Error: {str(e)}", err=True)
+            click.echo(f"❌ List Error: {e!s}", err=True)
             click.echo("💡 Troubleshooting:", err=True)
-            click.echo(f"   • Try using mock mode: LIGHTRAG_MOCK_MODE=true", err=True)
+            click.echo("   • Try using mock mode: LIGHTRAG_MOCK_MODE=true", err=True)
             click.echo(
-                f"   • Use 'jestir lightrag test' to verify configuration", err=True
+                "   • Use 'jestir lightrag test' to verify configuration",
+                err=True,
             )
         raise click.Abort()
 
@@ -999,13 +1026,13 @@ def show(entity_name, entity_type):
         entity = asyncio.run(client.get_entity_details(entity_name))
 
         if entity:
-            click.echo(f"\nEntity Details:")
+            click.echo("\nEntity Details:")
             click.echo(f"Name: {entity.name}")
             click.echo(f"Type: {entity.entity_type}")
             if entity.description:
                 click.echo(f"Description: {entity.description}")
             if entity.properties:
-                click.echo(f"Properties:")
+                click.echo("Properties:")
                 for key, value in entity.properties.items():
                     click.echo(f"  {key}: {value}")
             if entity.relationships:
@@ -1021,7 +1048,8 @@ def show(entity_name, entity_type):
             or "refused" in error_msg
         ):
             click.echo(
-                f"❌ Connection Error: Cannot reach LightRAG API - {str(e)}", err=True
+                f"❌ Connection Error: Cannot reach LightRAG API - {e!s}",
+                err=True,
             )
             click.echo("💡 Troubleshooting:", err=True)
             click.echo(f"   • Check LIGHTRAG_BASE_URL: {config.base_url}", err=True)
@@ -1029,28 +1057,28 @@ def show(entity_name, entity_type):
             click.echo("   • Check your network connection", err=True)
             click.echo("   • Try using mock mode: LIGHTRAG_MOCK_MODE=true", err=True)
         elif "unauthorized" in error_msg or "forbidden" in error_msg:
-            click.echo(f"❌ Authentication Error: {str(e)}", err=True)
+            click.echo(f"❌ Authentication Error: {e!s}", err=True)
             click.echo("💡 Troubleshooting:", err=True)
             click.echo(
-                "   • Check your LIGHTRAG_API_KEY environment variable", err=True
+                "   • Check your LIGHTRAG_API_KEY environment variable",
+                err=True,
             )
             click.echo("   • Verify the API key is valid and not expired", err=True)
         else:
-            click.echo(f"❌ Entity Details Error: {str(e)}", err=True)
+            click.echo(f"❌ Entity Details Error: {e!s}", err=True)
             click.echo("💡 Troubleshooting:", err=True)
             click.echo(f"   • Check that entity '{entity_name}' exists", err=True)
             click.echo(
                 f"   • Try searching first: 'jestir search characters --query \"{entity_name}\"'",
                 err=True,
             )
-            click.echo(f"   • Try using mock mode: LIGHTRAG_MOCK_MODE=true", err=True)
+            click.echo("   • Try using mock mode: LIGHTRAG_MOCK_MODE=true", err=True)
         raise click.Abort()
 
 
 @main.group()
 def lightrag():
     """LightRAG API testing and validation commands."""
-    pass
 
 
 @lightrag.command()
@@ -1074,7 +1102,7 @@ def test(base_url, api_key, timeout):
         client = LightRAGClient(config)
 
         # Test basic connectivity
-        click.echo(f"Configuration:")
+        click.echo("Configuration:")
         click.echo(f"  Base URL: {config.base_url}")
         click.echo(f"  API Key: {'***' if config.api_key else 'Not set'}")
         click.echo(f"  Timeout: {config.timeout}s")
@@ -1099,7 +1127,7 @@ def test(base_url, api_key, timeout):
             or "timeout" in error_msg
             or "refused" in error_msg
         ):
-            click.echo(f"❌ Connection Failed: Cannot reach LightRAG API", err=True)
+            click.echo("❌ Connection Failed: Cannot reach LightRAG API", err=True)
             click.echo("💡 Troubleshooting:", err=True)
             click.echo(f"   • Check LIGHTRAG_BASE_URL: {config.base_url}", err=True)
             click.echo("   • Verify LightRAG service is running", err=True)
@@ -1110,25 +1138,28 @@ def test(base_url, api_key, timeout):
             or "forbidden" in error_msg
             or "401" in error_msg
         ):
-            click.echo(f"❌ Authentication Failed: Invalid API credentials", err=True)
+            click.echo("❌ Authentication Failed: Invalid API credentials", err=True)
             click.echo("💡 Troubleshooting:", err=True)
             click.echo(
-                "   • Check your LIGHTRAG_API_KEY environment variable", err=True
+                "   • Check your LIGHTRAG_API_KEY environment variable",
+                err=True,
             )
             click.echo("   • Verify the API key is valid and not expired", err=True)
             click.echo("   • Contact your LightRAG administrator", err=True)
         elif "404" in error_msg or "not found" in error_msg:
             click.echo(
-                f"❌ Service Not Found: LightRAG API endpoints not available", err=True
+                "❌ Service Not Found: LightRAG API endpoints not available",
+                err=True,
             )
             click.echo("💡 Troubleshooting:", err=True)
             click.echo(
-                f"   • Verify LIGHTRAG_BASE_URL is correct: {config.base_url}", err=True
+                f"   • Verify LIGHTRAG_BASE_URL is correct: {config.base_url}",
+                err=True,
             )
             click.echo("   • Check LightRAG service version compatibility", err=True)
             click.echo("   • Ensure all required API endpoints are available", err=True)
         else:
-            click.echo(f"❌ LightRAG API test failed: {str(e)}", err=True)
+            click.echo(f"❌ LightRAG API test failed: {e!s}", err=True)
             click.echo("💡 Troubleshooting:", err=True)
             click.echo("   • Check LightRAG service logs", err=True)
             click.echo("   • Verify service configuration", err=True)
@@ -1171,7 +1202,7 @@ def fuzzy(name, entity_type):
             click.echo("No fuzzy matches found.")
 
     except Exception as e:
-        click.echo(f"Error in fuzzy search: {str(e)}", err=True)
+        click.echo(f"Error in fuzzy search: {e!s}", err=True)
         raise click.Abort()
 
 

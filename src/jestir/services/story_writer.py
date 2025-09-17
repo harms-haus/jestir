@@ -1,12 +1,12 @@
 """Story writing service using OpenAI for final story generation."""
 
-import json
 import re
 from pathlib import Path
-from typing import Optional, Dict, Any
+
 from openai import OpenAI
-from ..models.story_context import StoryContext
+
 from ..models.api_config import CreativeAPIConfig
+from ..models.story_context import StoryContext
 from .template_loader import TemplateLoader
 
 
@@ -15,8 +15,8 @@ class StoryWriter:
 
     def __init__(
         self,
-        config: Optional[CreativeAPIConfig] = None,
-        template_loader: Optional[TemplateLoader] = None,
+        config: CreativeAPIConfig | None = None,
+        template_loader: TemplateLoader | None = None,
     ):
         """Initialize the story writer with OpenAI configuration."""
         self.config = config or self._load_config_from_env()
@@ -111,7 +111,7 @@ class StoryWriter:
                 "tone": context.settings.get("tone", "gentle"),
                 "length": context.settings.get("length", "short"),
                 "target_word_count": self._get_target_word_count(
-                    context.settings.get("length", "short")
+                    context.settings.get("length", "short"),
                 ),
                 "age_appropriate": context.settings.get("age_appropriate", True),
                 "morals": (
@@ -149,7 +149,8 @@ class StoryWriter:
 
             # Load and render template
             return self.template_loader.render_template(
-                "prompts/user_prompts/story_generation.txt", template_context
+                "prompts/user_prompts/story_generation.txt",
+                template_context,
             )
         except Exception as e:
             # Fallback to hardcoded prompt if template loading fails
@@ -198,26 +199,26 @@ class StoryWriter:
         return f"""Write a complete bedtime story based on the provided outline and context.
 
 **Story Requirements:**
-- Genre: {context.settings.get('genre', 'adventure')}
-- Tone: {context.settings.get('tone', 'gentle')}
-- Length: {context.settings.get('length', 'short')} (aim for {self._get_target_word_count(context.settings.get('length', 'short'))} words)
-- Age Appropriate: {context.settings.get('age_appropriate', True)}
-- Morals: {', '.join(context.settings.get('morals', [])) if context.settings.get('morals') else 'None specified'}
+- Genre: {context.settings.get("genre", "adventure")}
+- Tone: {context.settings.get("tone", "gentle")}
+- Length: {context.settings.get("length", "short")} (aim for {self._get_target_word_count(context.settings.get("length", "short"))} words)
+- Age Appropriate: {context.settings.get("age_appropriate", True)}
+- Morals: {", ".join(context.settings.get("morals", [])) if context.settings.get("morals") else "None specified"}
 
 **Characters:**
-{chr(10).join(character_descriptions) if character_descriptions else '- No specific characters mentioned'}
+{chr(10).join(character_descriptions) if character_descriptions else "- No specific characters mentioned"}
 
 **Locations:**
-{chr(10).join(location_descriptions) if location_descriptions else '- No specific locations mentioned'}
+{chr(10).join(location_descriptions) if location_descriptions else "- No specific locations mentioned"}
 
 **Items/Objects:**
-{chr(10).join(item_descriptions) if item_descriptions else '- No specific items mentioned'}
+{chr(10).join(item_descriptions) if item_descriptions else "- No specific items mentioned"}
 
 **Plot Points:**
-{plot_points_text if plot_points_text else '- No specific plot points mentioned'}
+{plot_points_text if plot_points_text else "- No specific plot points mentioned"}
 
 **Original Request:**
-{user_inputs_text if user_inputs_text else 'No specific request provided'}
+{user_inputs_text if user_inputs_text else "No specific request provided"}
 
 **Story Outline to Follow:**
 {outline}
@@ -311,7 +312,7 @@ The End.
         if not outline_path.exists():
             raise FileNotFoundError(f"Outline file not found: {outline_file}")
 
-        with open(outline_path, "r", encoding="utf-8") as f:
+        with open(outline_path, encoding="utf-8") as f:
             return f.read()
 
     def load_context_from_file(self, context_file: str) -> StoryContext:
@@ -322,7 +323,7 @@ The End.
         if not context_path.exists():
             raise FileNotFoundError(f"Context file not found: {context_file}")
 
-        with open(context_path, "r", encoding="utf-8") as f:
+        with open(context_path, encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
         return StoryContext(**data)

@@ -3,7 +3,7 @@
 ## Core Standards
 
 - **Languages & Runtimes:** Python 3.8+
-- **Style & Linting:** Black formatter, pylint
+- **Style & Linting:** Ruff formatter and linter
 - **Test Organization:** tests/ mirrors src/ structure
 
 ## Naming Conventions

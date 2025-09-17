@@ -1,11 +1,13 @@
 """Unit tests for enhanced error messaging."""
 
-import pytest
-import tempfile
 import os
+import tempfile
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
+
+import pytest
 from click.testing import CliRunner
+
 from jestir.cli import main
 from jestir.services.template_loader import TemplateLoader
 
@@ -71,7 +73,8 @@ class TestErrorMessaging:
         """Test search command with connection error shows helpful message."""
         with patch.dict("os.environ", {"LIGHTRAG_BASE_URL": "http://invalid-url:9999"}):
             result = self.runner.invoke(
-                main, ["search", "characters", "--query", "test"]
+                main,
+                ["search", "characters", "--query", "test"],
             )
 
             # The client gracefully falls back to mock mode, but if it fails completely
@@ -148,7 +151,8 @@ class TestErrorMessaging:
         """Test lightrag test command error handling."""
         # Test with invalid URL
         result = self.runner.invoke(
-            main, ["lightrag", "test", "--base-url", "http://invalid-url:9999"]
+            main,
+            ["lightrag", "test", "--base-url", "http://invalid-url:9999"],
         )
 
         # Should either complete successfully due to graceful fallback or show error
@@ -157,11 +161,11 @@ class TestErrorMessaging:
     def test_api_error_detection_in_context_command(self):
         """Test API error detection and helpful messaging."""
         with patch(
-            "jestir.services.context_generator.ContextGenerator.generate_context"
+            "jestir.services.context_generator.ContextGenerator.generate_context",
         ) as mock_generate:
             # Simulate OpenAI API error
             mock_generate.side_effect = Exception(
-                "OpenAI API error: insufficient credits"
+                "OpenAI API error: insufficient credits",
             )
 
             result = self.runner.invoke(
@@ -190,7 +194,7 @@ class TestErrorMessaging:
     def test_template_error_detection_in_outline_command(self):
         """Test template error detection and helpful messaging."""
         with patch(
-            "jestir.services.outline_generator.OutlineGenerator.generate_outline"
+            "jestir.services.outline_generator.OutlineGenerator.generate_outline",
         ) as mock_generate:
             # Simulate template error
             mock_generate.side_effect = Exception("Template error: missing variable")
@@ -200,7 +204,7 @@ class TestErrorMessaging:
                 context_file = os.path.join(temp_dir, "context.yaml")
                 with open(context_file, "w") as f:
                     f.write(
-                        "metadata:\n  title: Test Story\nentities: []\nrelationships: []"
+                        "metadata:\n  title: Test Story\nentities: []\nrelationships: []",
                     )
 
                 result = self.runner.invoke(main, ["outline", context_file])
@@ -211,13 +215,14 @@ class TestErrorMessaging:
     def test_search_command_query_error_detection(self):
         """Test search command query error detection."""
         with patch(
-            "jestir.services.lightrag_client.LightRAGClient.search_entities"
+            "jestir.services.lightrag_client.LightRAGClient.search_entities",
         ) as mock_search:
             # Simulate invalid query error
             mock_search.side_effect = Exception("Invalid query format")
 
             result = self.runner.invoke(
-                main, ["search", "characters", "--query", "invalid query"]
+                main,
+                ["search", "characters", "--query", "invalid query"],
             )
 
             assert result.exit_code == 1
@@ -259,7 +264,8 @@ class TestErrorMessaging:
         with patch.dict("os.environ", {"LIGHTRAG_MOCK_MODE": "true"}):
             # Test with invalid page number
             result = self.runner.invoke(
-                main, ["search", "characters", "--query", "test", "--page", "0"]
+                main,
+                ["search", "characters", "--query", "test", "--page", "0"],
             )
 
             # Should handle gracefully or show validation error

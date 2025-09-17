@@ -146,7 +146,7 @@ uv run pytest
 ### Code Formatting
 
 ```bash
-uv run black src/ tests/
+uv run ruff format src/ tests/
 ```
 
 ### Type Checking

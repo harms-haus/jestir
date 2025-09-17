@@ -1,12 +1,11 @@
 """Outline generation service using OpenAI for story structure creation."""
 
-import json
-import re
 from pathlib import Path
-from typing import Optional, Dict, Any
+
 from openai import OpenAI
-from ..models.story_context import StoryContext
+
 from ..models.api_config import CreativeAPIConfig
+from ..models.story_context import StoryContext
 from .template_loader import TemplateLoader
 
 
@@ -15,8 +14,8 @@ class OutlineGenerator:
 
     def __init__(
         self,
-        config: Optional[CreativeAPIConfig] = None,
-        template_loader: Optional[TemplateLoader] = None,
+        config: CreativeAPIConfig | None = None,
+        template_loader: TemplateLoader | None = None,
     ):
         """Initialize the outline generator with OpenAI configuration."""
         self.config = config or self._load_config_from_env()
@@ -145,7 +144,8 @@ class OutlineGenerator:
 
             # Load and render template
             return self.template_loader.render_template(
-                "prompts/user_prompts/outline_generation.txt", template_context
+                "prompts/user_prompts/outline_generation.txt",
+                template_context,
             )
         except Exception as e:
             # Fallback to hardcoded prompt if template loading fails
@@ -191,29 +191,29 @@ class OutlineGenerator:
             f"- {input_id}: {text}" for input_id, text in context.user_inputs.items()
         )
 
-        return f"""Create a detailed story outline for a {context.settings.get('genre', 'adventure')} bedtime story with a {context.settings.get('tone', 'gentle')} tone.
+        return f"""Create a detailed story outline for a {context.settings.get("genre", "adventure")} bedtime story with a {context.settings.get("tone", "gentle")} tone.
 
 **Story Requirements:**
-- Genre: {context.settings.get('genre', 'adventure')}
-- Tone: {context.settings.get('tone', 'gentle')}
-- Length: {context.settings.get('length', 'short')}
-- Age Appropriate: {context.settings.get('age_appropriate', True)}
-- Morals: {', '.join(context.settings.get('morals', [])) if context.settings.get('morals') else 'None specified'}
+- Genre: {context.settings.get("genre", "adventure")}
+- Tone: {context.settings.get("tone", "gentle")}
+- Length: {context.settings.get("length", "short")}
+- Age Appropriate: {context.settings.get("age_appropriate", True)}
+- Morals: {", ".join(context.settings.get("morals", [])) if context.settings.get("morals") else "None specified"}
 
 **Characters:**
-{chr(10).join(character_descriptions) if character_descriptions else '- No specific characters mentioned'}
+{chr(10).join(character_descriptions) if character_descriptions else "- No specific characters mentioned"}
 
 **Locations:**
-{chr(10).join(location_descriptions) if location_descriptions else '- No specific locations mentioned'}
+{chr(10).join(location_descriptions) if location_descriptions else "- No specific locations mentioned"}
 
 **Items/Objects:**
-{chr(10).join(item_descriptions) if item_descriptions else '- No specific items mentioned'}
+{chr(10).join(item_descriptions) if item_descriptions else "- No specific items mentioned"}
 
 **Plot Points:**
-{plot_points_text if plot_points_text else '- No specific plot points mentioned'}
+{plot_points_text if plot_points_text else "- No specific plot points mentioned"}
 
 **Original Request:**
-{user_inputs_text if user_inputs_text else 'No specific request provided'}
+{user_inputs_text if user_inputs_text else "No specific request provided"}
 
 **Requirements for the outline:**
 1. Create a clear 3-act structure (Beginning, Middle, End)
@@ -340,7 +340,7 @@ Even when things seem difficult, with courage and determination, you can overcom
         if not context_path.exists():
             raise FileNotFoundError(f"Context file not found: {context_file}")
 
-        with open(context_path, "r", encoding="utf-8") as f:
+        with open(context_path, encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
         return StoryContext(**data)

@@ -1,13 +1,11 @@
 """Unit tests for ContextGenerator service."""
 
-import pytest
 import json
 from unittest.mock import Mock, patch
-from jestir.services.context_generator import ContextGenerator
+
 from jestir.models.api_config import ExtractionAPIConfig
 from jestir.models.story_context import StoryContext
-from jestir.models.entity import Entity
-from jestir.models.relationship import Relationship
+from jestir.services.context_generator import ContextGenerator
 
 
 class TestContextGenerator:
@@ -40,7 +38,8 @@ class TestContextGenerator:
         input_text = "A brave knight named Arthur goes to the enchanted forest to find a magical sword."
 
         with patch.object(
-            self.generator, "_extract_entities_and_relationships"
+            self.generator,
+            "_extract_entities_and_relationships",
         ) as mock_extract:
             mock_extract.return_value = ([], [])
 
@@ -67,7 +66,7 @@ class TestContextGenerator:
                         "description": "A brave knight",
                         "existing": False,
                         "properties": {},
-                    }
+                    },
                 ],
                 "relationships": [
                     {
@@ -77,13 +76,15 @@ class TestContextGenerator:
                         "location": None,
                         "mentioned_at": ["Arthur visits the forest"],
                         "metadata": {},
-                    }
+                    },
                 ],
-            }
+            },
         )
 
         with patch.object(
-            self.generator.client.chat.completions, "create", return_value=mock_response
+            self.generator.client.chat.completions,
+            "create",
+            return_value=mock_response,
         ):
             entities, relationships = (
                 self.generator._extract_entities_and_relationships(input_text)
@@ -145,7 +146,9 @@ class TestContextGenerator:
         content = "This is not JSON"
 
         with patch.object(
-            self.generator, "_fallback_extraction", return_value=([], [])
+            self.generator,
+            "_fallback_extraction",
+            return_value=([], []),
         ) as mock_fallback:
             entities, relationships = self.generator._parse_extraction_response(content)
 
