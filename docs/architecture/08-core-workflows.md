@@ -5,14 +5,14 @@ sequenceDiagram
     participant User
     participant CLI
     participant ContextGen
-    participant LightRAG
+    participant LightRAG[LightRAG API]
     participant OpenAI_EXT[OpenAI (Extraction)]
     participant OpenAI_CREAT[OpenAI (Creative)]
     participant FileSystem
 
     User->>CLI: story context "purple dragon story"
     CLI->>ContextGen: generate(input)
-    ContextGen->>LightRAG: search existing entities
+    ContextGen->>LightRAG: POST /query (search existing entities)
     LightRAG-->>ContextGen: return matches
     ContextGen->>OpenAI_EXT: parse natural language to extract entities and relationships
     OpenAI_EXT-->>ContextGen: parsed content

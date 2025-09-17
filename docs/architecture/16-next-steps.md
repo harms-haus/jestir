@@ -6,4 +6,4 @@ For future Angular web application: "Create a frontend architecture that wraps t
 
 ## Developer Prompt
 
-"Implement the 3-stage pipeline following this architecture. Start with Story 1.1 (project setup) then Story 1.2 (context generation). Focus on clean separation between components using the Repository pattern for LightRAG. All external services must be mockable for testing. Use Pydantic models for type safety throughout."
+"Implement the 3-stage pipeline following this architecture. Start with Story 1.1 (project setup) then Story 1.2 (context generation). Focus on clean separation between components using the Repository pattern for LightRAG API. All external services must be mockable for testing. Use Pydantic models for type safety throughout."

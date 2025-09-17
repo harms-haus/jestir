@@ -29,7 +29,7 @@ so that I have a structured representation of my story requirements.
 1. CLI command `story context "natural language input"` creates context.yaml
 2. YAML schema implemented as designed (metadata, settings, entities, relationships, user_inputs, plot_points)
 3. Default output to context.yaml with option to specify custom filename
-4. Entity extraction identifies character names and marks them as new/existing based on LightRAG queries (mock LightRAG for now)
+4. Entity extraction identifies character names and marks them as new/existing based on LightRAG API queries (mock LightRAG API for now)
 5. Relationship extraction identifies basic relationships (visits, finds, creates)
 6. Unit tests cover YAML generation and structure validation
 7. Error handling for malformed input

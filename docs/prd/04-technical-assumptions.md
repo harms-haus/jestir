@@ -11,7 +11,7 @@ Monolithic CLI application with modular components for each pipeline stage. Futu
 CRITICAL DECISION - Comprehensive testing including:
 
 - Unit tests for each pipeline stage
-- Integration tests for LightRAG connectivity
+- Integration tests for LightRAG API connectivity
 - Template parsing tests
 - Entity extraction tests
 - File I/O tests
@@ -21,7 +21,7 @@ CRITICAL DECISION - Comprehensive testing including:
 
 - Python 3.8+ with type hints throughout
 - OpenAI API for LLM interactions
-- LightRAG for vector-based entity retrieval
+- LightRAG API for vector-based entity retrieval
 - YAML for context files
 - Markdown for human-readable outputs
 - External template files with {{key}} substitution pattern

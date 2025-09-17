@@ -13,9 +13,9 @@
 
 ### Background Context
 
-Current AI story generation tools lack two critical features: consistent world-building across multiple stories and sufficient human control points to ensure appropriate content. This tool addresses these gaps through a 3-stage pipeline (context → outline → story) that allows intervention at each stage, combined with a knowledge base (LightRAG) that provides existing character and location information for reference. The system uses file-based templates for extensibility without code changes, making it adaptable as storytelling needs evolve.
+Current AI story generation tools lack two critical features: consistent world-building across multiple stories and sufficient human control points to ensure appropriate content. This tool addresses these gaps through a 3-stage pipeline (context → outline → story) that allows intervention at each stage, combined with a knowledge base (LightRAG API) that provides existing character and location information for reference. The system uses file-based templates for extensibility without code changes, making it adaptable as storytelling needs evolve.
 
-**Data Entry Process:** LightRAG is populated manually after stories are read, not during generation. When generating a new story, the system queries LightRAG to find existing characters and locations, then creates new entities in the context file for any characters/locations not found. After the story is complete and read, parents can manually add new characters and locations to LightRAG for future stories.
+**Data Entry Process:** The LightRAG API is populated manually after stories are read, not during generation. When generating a new story, the system queries the LightRAG API to find existing characters and locations, then creates new entities in the context file for any characters/locations not found. After the story is complete and read, parents can manually add new characters and locations to the LightRAG API for future stories.
 
 ### Change Log
 
@@ -27,7 +27,7 @@ Current AI story generation tools lack two critical features: consistent world-b
 
 ### Functional
 
-- FR1: The system shall process natural language input using OpenAI AI to identify existing characters, locations, and items from the LightRAG knowledge base
+- FR1: The system shall process natural language input using OpenAI AI to identify existing characters, locations, and items from the LightRAG API knowledge base
 - FR2: The system shall generate stories through a 3-stage pipeline: context generation, outline creation, and story writing
 - FR3: Each pipeline stage shall output an editable file that serves as input for the next stage
 - FR4: The system shall support variable-strength control parameters (0-10 scale) for genre, tone, morals, and other story attributes
@@ -45,7 +45,7 @@ Current AI story generation tools lack two critical features: consistent world-b
 - NFR3: All intermediate files shall be human-readable and editable (YAML for context, Markdown for outline/story)
 - NFR4: The system shall support parallel story development through configurable input/output file names
 - NFR5: Template files shall be stored externally and loaded at runtime for modification without code changes
-- NFR6: The system shall integrate with LightRAG for vector-based retrieval and inference about existing story data
+- NFR6: The system shall integrate with the LightRAG API for vector-based retrieval and inference about existing story data
 - NFR7: Response time for each generation stage shall be under 30 seconds for typical story complexity
 - NFR8: The system shall support Python 3.8+ for broad compatibility
 - NFR9: The system shall support separate OpenAI API configurations for extraction and creative generation, allowing different models and endpoints
@@ -90,7 +90,7 @@ Monolithic CLI application with modular components for each pipeline stage. Futu
 CRITICAL DECISION - Comprehensive testing including:
 
 - Unit tests for each pipeline stage
-- Integration tests for LightRAG connectivity
+- Integration tests for LightRAG API connectivity
 - Template parsing tests
 - Entity extraction tests
 - File I/O tests
@@ -100,7 +100,7 @@ CRITICAL DECISION - Comprehensive testing including:
 
 - Python 3.8+ with type hints throughout
 - OpenAI API for LLM interactions
-- LightRAG for vector-based entity retrieval
+- LightRAG API for vector-based entity retrieval
 - YAML for context files
 - Markdown for human-readable outputs
 - External template files with {{key}} substitution pattern
@@ -113,7 +113,7 @@ CRITICAL DECISION - Comprehensive testing including:
 
 **Epic 1: Foundation & Core Pipeline** - Establish project setup, basic 3-stage pipeline, and file I/O
 
-**Epic 2: Templates & LightRAG Integration** - Template system and LightRAG read-only integration
+**Epic 2: Templates & LightRAG API Integration** - Template system and LightRAG API read-only integration
 
 **Epic 3: Advanced Features & Optimization** - Token tracking, validation, search capabilities, and future web UI prep
 

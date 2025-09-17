@@ -1,9 +1,9 @@
 # Database Schema
 
-Since we're using LightRAG for read-only entity retrieval, we define the logical schema that LightRAG should adhere to on retrieval:
+Since we're using the LightRAG API for read-only entity retrieval, we define the logical schema that the LightRAG API should return for entity queries:
 
 ```python
-# LightRAG Entity Retrieval Structure
+# LightRAG API Entity Retrieval Structure
 {
     "entity_type": "character",
     "name": "Lily",

@@ -2,7 +2,7 @@
 
 ## Functional
 
-- FR1: The system shall process natural language input using OpenAI AI to identify existing characters, locations, and items from the LightRAG knowledge base
+- FR1: The system shall process natural language input using OpenAI AI to identify existing characters, locations, and items from the LightRAG API knowledge base
 - FR2: The system shall generate stories through a 3-stage pipeline: context generation, outline creation, and story writing
 - FR3: Each pipeline stage shall output an editable file that serves as input for the next stage
 - FR4: The system shall support variable-strength control parameters (0-10 scale) for genre, tone, morals, and other story attributes
@@ -20,7 +20,7 @@
 - NFR3: All intermediate files shall be human-readable and editable (YAML for context, Markdown for outline/story)
 - NFR4: The system shall support parallel story development through configurable input/output file names
 - NFR5: Template files shall be stored externally and loaded at runtime for modification without code changes
-- NFR6: The system shall integrate with LightRAG for vector-based retrieval and inference about existing story data
+- NFR6: The system shall integrate with the LightRAG API for vector-based retrieval and inference about existing story data
 - NFR7: Response time for each generation stage shall be under 30 seconds for typical story complexity
 - NFR8: The system shall support Python 3.8+ for broad compatibility
 - NFR9: The system shall support separate OpenAI API configurations for extraction and creative generation, allowing different models and endpoints

@@ -13,4 +13,4 @@ For future web UI development: "Review the CLI workflow defined in this PRD and 
 
 ## Architect Prompt
 
-"Create a Python CLI architecture that implements the 3-stage pipeline defined in this PRD. Focus on modular design where each stage can run independently, with a plugin system for templates and clear interfaces for future web API exposure. Ensure LightRAG integration is abstracted for testing."
+"Create a Python CLI architecture that implements the 3-stage pipeline defined in this PRD. Focus on modular design where each stage can run independently, with a plugin system for templates and clear interfaces for future web API exposure. Ensure LightRAG API integration is abstracted for testing."

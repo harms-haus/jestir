@@ -37,8 +37,8 @@
 - subtype: string - Specific subtype (protagonist|interior|magical)
 - name: string - Display name
 - description: string - Full text description
-- existing: boolean - Whether entity was found in LightRAG (true) or is new to this story (false)
-- rag_id: string - LightRAG reference if existing
+- existing: boolean - Whether entity was found in LightRAG API (true) or is new to this story (false)
+- rag_id: string - LightRAG API reference if existing
 - properties: dict - Type-specific attributes
 
 **Relationships:**

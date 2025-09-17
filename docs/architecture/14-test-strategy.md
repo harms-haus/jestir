@@ -25,10 +25,10 @@
 
 ### Integration Tests
 
-- **Scope:** Pipeline stages, LightRAG integration
+- **Scope:** Pipeline stages, LightRAG API integration
 - **Location:** `tests/integration/`
 - **Test Infrastructure:**
-  - **LightRAG:** Mock with in-memory retrieval
+  - **LightRAG API:** Mock HTTP responses with in-memory retrieval
   - **OpenAI:** Mock responses from fixtures
   - **File System:** Temp directories
 

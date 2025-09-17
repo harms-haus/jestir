@@ -23,7 +23,7 @@ Now let me work through the high-level architecture section. I'll present the co
 
 ### Technical Summary
 
-The system employs a modular pipeline architecture with three distinct stages (context generation, outline creation, story writing) that process data sequentially through file-based intermediates. Built as a Python CLI application, it integrates LightRAG for read-only entity retrieval and uses OpenAI's API for content generation. The architecture prioritizes human control through editable intermediate files, cost optimization through token tracking, and extensibility through external template files. This design directly supports the PRD goals of controlled story generation with consistent world-building.
+The system employs a modular pipeline architecture with three distinct stages (context generation, outline creation, story writing) that process data sequentially through file-based intermediates. Built as a Python CLI application, it integrates with the LightRAG API for read-only entity retrieval and uses OpenAI's API for content generation. The architecture prioritizes human control through editable intermediate files, cost optimization through token tracking, and extensibility through external template files. This design directly supports the PRD goals of controlled story generation with consistent world-building.
 
 ### High Level Overview
 
@@ -39,7 +39,7 @@ The main architectural style is a **Pipeline Architecture** with file-based comm
 ```mermaid
 graph TD
     A[User Input<br/>Natural Language] --> B[Context Generator]
-    B --> C[(LightRAG<br/>Entity Retrieval)]
+    B --> C[(LightRAG API<br/>Entity Retrieval)]
     B --> D[context.yaml]
 
     D --> E[Outline Generator]
@@ -66,7 +66,7 @@ graph TD
 ### Architectural and Design Patterns
 
 - **Pipeline Pattern:** Three-stage sequential processing with file-based communication - *Rationale:* Enables human intervention and independent stage execution
-- **Repository Pattern:** Abstract LightRAG operations behind interface - *Rationale:* Enables testing with mocks and future retrieval system migration
+- **Repository Pattern:** Abstract LightRAG API operations behind interface - *Rationale:* Enables testing with mocks and future retrieval system migration
 - **Template Method Pattern:** External templates with variable substitution - *Rationale:* Allows prompt modification without code changes
 - **Command Pattern:** CLI commands encapsulate operations - *Rationale:* Supports both high-level and granular operations
 - **Factory Pattern:** Entity creation based on type (character/location/item) - *Rationale:* Standardizes entity creation with type-specific attributes
@@ -89,7 +89,7 @@ Now, let me detail the technology stack. This is critical for your implementatio
 | **Package Manager** | Poetry | 1.7+ | Dependency management | Lock file support, virtual env management |
 | **CLI Framework** | Click | 8.1+ | Command-line interface | Declarative commands, automatic help, testing support |
 | **LLM Integration** | OpenAI Python SDK | 1.0+ | AI content generation | Official SDK, async support, token counting, dual client support |
-| **Vector Retrieval** | LightRAG | Latest | Entity retrieval | Graph-based retrieval, natural language queries |
+| **Vector Retrieval** | LightRAG API | Latest | Entity retrieval | REST API for graph-based retrieval, natural language queries via /query endpoint |
 | **Data Format** | PyYAML | 6.0 | Context file handling | Human-readable, preserves structure |
 | **Template Engine** | Custom | N/A | Simple {{key}} substitution | Minimal complexity, easy to understand |
 | **Testing** | pytest | 7.4+ | Unit and integration tests | Fixtures, mocking, good assertion messages |
@@ -246,18 +246,18 @@ Now, let me detail the technology stack. This is critical for your implementatio
 
 ### EntityRepository Component
 
-**Responsibility:** Interface with LightRAG for entity retrieval
+**Responsibility:** Interface with LightRAG API for entity retrieval
 
 **Key Interfaces:**
 
-- `search(query: str, entity_type: Optional[str]) → List[Entity]`
-- `get(entity_id: str) → Optional[Entity]`
-- `exists(name: str) → bool`
-- `add_entity(entity: Entity) → str`  # Manual data entry after story reading
+- `search(query: str, entity_type: Optional[str]) → List[Entity]`  # Search via /query endpoint
+- `get(entity_id: str) → Optional[Entity]`  # Get via /entities/{id} endpoint
+- `exists(name: str) → bool`  # Check existence via /query endpoint
+- `add_entity(entity: Entity) → str`  # Manual data entry via /documents/text endpoint
 
-**Dependencies:** LightRAG
+**Dependencies:** LightRAG API
 
-**Technology Stack:** LightRAG Python client, read-only operations
+**Technology Stack:** HTTP client for LightRAG API, read-only operations using REST endpoints
 
 ### TemplateManager Component
 
@@ -310,7 +310,7 @@ graph TD
     subgraph "External Services"
         OAI_EXT[OpenAI Client (Extraction)]
         OAI_CREAT[OpenAI Client (Creative)]
-        LR[(LightRAG)]
+        LR[(LightRAG API)]
         FS[(File System)]
     end
 
@@ -411,14 +411,14 @@ sequenceDiagram
     participant User
     participant CLI
     participant ContextGen
-    participant LightRAG
+    participant LightRAG[LightRAG API]
     participant OpenAI_EXT[OpenAI (Extraction)]
     participant OpenAI_CREAT[OpenAI (Creative)]
     participant FileSystem
 
     User->>CLI: story context "purple dragon story"
     CLI->>ContextGen: generate(input)
-    ContextGen->>LightRAG: search existing entities
+    ContextGen->>LightRAG: POST /query (search existing entities)
     LightRAG-->>ContextGen: return matches
     ContextGen->>OpenAI_EXT: parse natural language to extract entities and relationships
     OpenAI_EXT-->>ContextGen: parsed content
@@ -444,7 +444,7 @@ sequenceDiagram
 
 ## Database Schema
 
-Since we're using LightRAG for read-only entity retrieval, we define the logical schema that LightRAG should adhere to on retrieval:
+Since we're using the LightRAG API for read-only entity retrieval, we define the logical schema that the LightRAG API should return for entity queries:
 
 ```python
 # LightRAG Entity Retrieval Structure
@@ -656,10 +656,10 @@ Development (local) -> Testing (CI) -> Release (PyPI/GitHub)
 
 #### Integration Tests
 
-- **Scope:** Pipeline stages, LightRAG integration
+- **Scope:** Pipeline stages, LightRAG API integration
 - **Location:** `tests/integration/`
 - **Test Infrastructure:**
-  - **LightRAG:** Mock with in-memory retrieval
+  - **LightRAG API:** Mock HTTP responses with in-memory retrieval
   - **OpenAI:** Mock responses from fixtures
   - **File System:** Temp directories
 

@@ -59,18 +59,18 @@
 
 ## EntityRepository Component
 
-**Responsibility:** Interface with LightRAG for entity retrieval
+**Responsibility:** Interface with LightRAG API for entity retrieval
 
 **Key Interfaces:**
 
-- `search(query: str, entity_type: Optional[str]) → List[Entity]`
-- `get(entity_id: str) → Optional[Entity]`
-- `exists(name: str) → bool`
-- `add_entity(entity: Entity) → str`  # Manual data entry after story reading
+- `search(query: str, entity_type: Optional[str]) → List[Entity]`  # Search via /query endpoint
+- `get(entity_id: str) → Optional[Entity]`  # Get via /entities/{id} endpoint
+- `exists(name: str) → bool`  # Check existence via /query endpoint
+- `add_entity(entity: Entity) → str`  # Manual data entry via /documents/text endpoint
 
-**Dependencies:** LightRAG
+**Dependencies:** LightRAG API
 
-**Technology Stack:** LightRAG Python client, read-only operations
+**Technology Stack:** HTTP client for LightRAG API, read-only operations using REST endpoints
 
 ## TemplateManager Component
 
