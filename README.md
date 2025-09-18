@@ -1,251 +1,366 @@
 # Jestir
 
-AI-powered bedtime story generator with 3-stage pipeline.
+**AI-powered bedtime story generator with intelligent world-building and human control**
 
-## Overview
+Jestir is a command-line tool that creates personalized bedtime stories through a controlled 3-stage pipeline, maintaining narrative consistency across stories while providing human checkpoints to ensure age-appropriate content.
 
-Jestir is a command-line tool that generates personalized bedtime stories through a three-stage pipeline:
+## ✨ Key Features
 
-1. **Context Generation**: Converts natural language input into structured context
-2. **Outline Creation**: Generates a story outline from the context
-3. **Story Writing**: Creates the final bedtime story from the outline
+### 🎯 **Controlled Story Generation**
+- **3-stage pipeline**: Context → Outline → Story with human intervention at each stage
+- **Natural language input**: Describe your story in plain English
+- **Intelligent context management**: Automatically updates existing stories or creates new ones
+- **File-based workflow**: Edit intermediate files before proceeding to next stage
 
-## Features
+### 🌍 **Consistent World-Building**
+- **Entity continuity**: Characters and locations persist across multiple stories
+- **LightRAG integration**: Query existing characters, locations, and items from previous stories
+- **Relationship tracking**: Maintains connections between story elements
+- **Provenance tracking**: Records where each entity was first mentioned
 
-- Natural language story input processing
-- Entity extraction and relationship mapping
-- Template-based story generation
-- Configurable story parameters (genre, tone, morals)
-- **Advanced length control** with word count and reading time targets
-- **Length validation** with tolerance checking and adjustment suggestions
-- File-based workflow for manual review and editing
-- Integration with LightRAG for character continuity
+### 🎨 **Customizable Storytelling**
+- **Template system**: Modify story generation prompts without code changes
+- **Length control**: Specify word count or reading time targets with tolerance settings
+- **Story parameters**: Control genre, tone, morals, and complexity (0-10 scale)
+- **Multiple variations**: Generate different story directions from the same context
 
-## Installation
+### 💰 **Cost Management**
+- **Token tracking**: Monitor OpenAI API usage and costs per story
+- **Dual API configuration**: Use different models for extraction vs. creative generation
+- **Optimization suggestions**: Get recommendations for reducing token usage
+- **Usage reports**: Track weekly/monthly costs and patterns
 
-### Prerequisites
+### 🔧 **Developer-Friendly**
+- **Comprehensive testing**: Unit, integration, and end-to-end test coverage
+- **Type safety**: Full Python type hints throughout
+- **Mock support**: Test without external API dependencies
+- **Extensible architecture**: Plugin system for templates and future features
 
-- Python 3.10 or higher
-- uv (for dependency management and virtual environments)
+## 🚀 Quick Start
 
-### Setup
+### Installation
 
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd jestir
-   ```
+**Prerequisites:**
+- Python 3.8 or higher
+- uv (for dependency management)
 
-2. Install dependencies and create virtual environment using uv:
-   ```bash
-   uv sync
-   ```
+**Setup:**
+```bash
+# Clone the repository
+git clone <repository-url>
+cd jestir
 
-3. Activate the virtual environment:
-   ```bash
-   uv shell
-   ```
+# Install dependencies and create virtual environment
+uv sync
 
-## Configuration
+# Activate virtual environment
+uv shell
+```
 
-Jestir automatically reads environment variables from a `.env` file in your project directory. Create a `.env` file with your API keys and configuration:
+### Configuration
 
-**Quick Setup:**
-1. Copy the example configuration: `cp .env.example .env`
-2. Edit `.env` with your actual API keys
+Create a `.env` file with your API keys:
 
 ```bash
-# OpenAI API Configuration
+# Copy example configuration
+cp .env.example .env
+
+# Edit with your actual API keys
+nano .env
+```
+
+**Required Environment Variables:**
+```bash
+# OpenAI API Configuration (required)
 OPENAI_EXTRACTION_API_KEY=your_extraction_api_key_here
 OPENAI_CREATIVE_API_KEY=your_creative_api_key_here
 
-# Optional: Customize API endpoints and models
-OPENAI_EXTRACTION_BASE_URL=https://api.openai.com/v1
-OPENAI_CREATIVE_BASE_URL=https://api.openai.com/v1
-OPENAI_EXTRACTION_MODEL=gpt-4o-mini
-OPENAI_CREATIVE_MODEL=gpt-4o
+# Optional: Customize models and endpoints
+OPENAI_EXTRACTION_MODEL=gpt-4o-mini    # For entity extraction
+OPENAI_CREATIVE_MODEL=gpt-4o           # For creative generation
+OPENAI_EXTRACTION_TEMPERATURE=0.1      # Lower for consistent extraction
+OPENAI_CREATIVE_TEMPERATURE=0.7        # Higher for creativity
 
 # LightRAG Configuration (optional)
 LIGHTRAG_BASE_URL=http://localhost:8000
 LIGHTRAG_API_KEY=your_lightrag_api_key_here
-LIGHTRAG_TIMEOUT=30
-LIGHTRAG_MOCK_MODE=false
+LIGHTRAG_MOCK_MODE=false               # Set to true for testing
 
 # Logging Configuration (optional)
-JESTIR_LOG_TO_DISK=false  # Set to true to enable disk logging
+JESTIR_LOG_TO_DISK=false              # Enable disk logging for debugging
 ```
 
-**Note:** The `.env` file is automatically loaded when you run Jestir commands. You can also set these environment variables directly in your shell if you prefer.
+### Basic Usage
 
-## Usage
-
-### Basic Commands
-
-Create a new context from natural language input (overwrites existing):
+**Complete story generation workflow:**
 ```bash
-jestir context new "A story about a brave little mouse who saves the forest"
+# 1. Create story context from natural language
+jestir context "A brave little mouse named Pip saves the forest from a terrible drought"
+
+# 2. Generate story outline (review and edit if needed)
+jestir outline context.yaml
+
+# 3. Generate final bedtime story
+jestir write outline.md
 ```
 
-Update existing context or create new one from natural language input:
+**Iterative context building:**
 ```bash
-jestir context "The antagonist should be a cat who wants to eat the mouse."
-```
+# Initial story concept
+jestir context "A brave little mouse saves the forest"
 
-Generate story outline from context:
-```bash
+# Add more details
+jestir context "The mouse has a magical acorn that can make plants grow"
+
+# Add antagonist
+jestir context "The antagonist is a greedy fox who wants to steal the acorn"
+
+# Generate outline
 jestir outline context.yaml
 ```
 
-Generate final story from outline:
+## 📖 Complete Command Reference
+
+### Core Pipeline Commands
+
+#### Context Generation
 ```bash
-jestir write outline.md
+# Intelligent context management (creates new or updates existing)
+jestir context "natural language input" [--output filename.yaml]
+
+# Force new context (overwrites existing)
+jestir context new "natural language input" [--output filename.yaml]
+```
+
+#### Outline Generation
+```bash
+# Generate story outline from context
+jestir outline context.yaml [--output filename.md]
+```
+
+#### Story Writing
+```bash
+# Generate final story from outline
+jestir write outline.md [--output filename.md] [--context context.yaml]
 ```
 
 ### Length Control
 
-Jestir now supports precise length control for stories with word count and reading time targets:
-
-**Set length when creating context:**
+**Set length targets:**
 ```bash
-# Target word count
-jestir context "A brave mouse adventure" --length 500
-
-# Target reading time (3 minutes)
-jestir context "A brave mouse adventure" --length 3m
-
-# Custom tolerance (default is 10%)
-jestir context "A brave mouse adventure" --length 500 --tolerance 15
-```
-
-**Override length for outline generation:**
-```bash
+# Word count targets
+jestir context "story input" --length 500
 jestir outline context.yaml --length 300
-jestir outline context.yaml --length 2m --tolerance 20
-```
-
-**Override length for story generation:**
-```bash
 jestir write outline.md --length 400
-jestir write outline.md --length 4m --tolerance 10
+
+# Reading time targets (in minutes)
+jestir context "story input" --length 3m
+jestir outline context.yaml --length 2m
+jestir write outline.md --length 4m
+
+# Custom tolerance (default: 10%)
+jestir context "story input" --length 500 --tolerance 15
 ```
 
-**Validate length of generated files:**
+**Validate length:**
 ```bash
-# Validate outline length
+# Check if generated content meets length requirements
 jestir validate-length outline.md --type outline --suggestions
-
-# Validate story length
 jestir validate-length story.md --type story --context context.yaml
 ```
 
-**Length Control Features:**
-- **Word count targets**: Specify exact word counts (e.g., `--length 500`)
-- **Reading time targets**: Specify reading time in minutes (e.g., `--length 3m`)
-- **Tolerance control**: Set acceptable deviation percentage (default: 10%)
-- **Length validation**: Check if generated content meets length requirements
-- **Adjustment suggestions**: Get specific recommendations for length adjustments
-- **Backward compatibility**: Works with existing legacy length settings (short, medium, long)
+### Entity Management
 
-### Command Options
-
-All commands support custom output file names:
+**Search existing entities:**
 ```bash
-jestir context "story input" --output my-context.yaml
-jestir context new "story input" --output my-context.yaml
-jestir outline context.yaml --output my-outline.md
-jestir write outline.md --output my-story.md
+# Search characters, locations, or items
+jestir search characters --query "brave mouse"
+jestir search locations --type interior --limit 20
+jestir search items --format json --export results.yaml
 ```
 
-### Debug and Logging Options
-
-**Verbose Mode (Console Debug Logging):**
+**List entities:**
 ```bash
-# Enable verbose output for any command
+# List all entities with optional filtering
+jestir list characters
+jestir list locations --type exterior --format table
+```
+
+**Show entity details:**
+```bash
+# Get detailed information about specific entities
+jestir show "Lily" --type character
+jestir show "Magic Forest" --type location
+```
+
+### Validation and Testing
+
+**Validate templates:**
+```bash
+# Check template syntax and completeness
+jestir validate-templates --verbose --fix
+```
+
+**Validate context:**
+```bash
+# Check context file structure and consistency
+jestir validate context.yaml --verbose --fix
+```
+
+**Test LightRAG connectivity:**
+```bash
+# Test API connection and configuration
+jestir lightrag test --base-url http://localhost:8000
+```
+
+### Debugging and Logging
+
+**Verbose output:**
+```bash
+# Enable debug-level console logging
 jestir --verbose context "story input"
 jestir --verbose outline context.yaml
 jestir --verbose write outline.md
 ```
 
-**Disk Logging (Environment Variable):**
+**Disk logging:**
 ```bash
-# Enable logging to disk (off by default)
+# Enable logging to disk files
 export JESTIR_LOG_TO_DISK=true
 jestir context "story input"
 ```
 
-**Combined Usage:**
-```bash
-# Both verbose console output and disk logging
-export JESTIR_LOG_TO_DISK=true
-jestir --verbose context "story input"
-```
+## 🏗️ Architecture
 
-### Context Management
-
-The `jestir context` command now intelligently manages your story context:
-
-- **If no `context.yaml` exists**: Creates a new context file
-- **If `context.yaml` exists**: Updates the existing context with your new input, merging entities and relationships intelligently
-- **Use `jestir context new`**: Always creates a fresh context file, overwriting any existing one
-
-This allows you to iteratively build and refine your story context through natural language prompts.
-
-**All user prompts are preserved** in the context file, including:
-- Initial story creation prompts
-- Additional context-update prompts
-- All subsequent refinements and modifications
-
-The context maintains a complete history of all your natural language inputs, ensuring that every prompt you provide is captured and can be referenced during story generation.
-
-## Documentation
-
-- **[CLI Reference](docs/cli-reference.md)** - Complete command-line interface documentation
-- **[Architecture](docs/architecture.md)** - System architecture and design patterns
-- **[PRD](docs/prd.md)** - Product requirements and specifications
-
-## Project Structure
+Jestir uses a **Pipeline Architecture** with file-based communication between stages:
 
 ```
-jestir/
-├── src/jestir/          # Main source code
-├── tests/               # Test files
-├── templates/           # Story templates
-├── output/              # Generated files (gitignored)
-├── docs/                # Documentation
-└── pyproject.toml       # Project configuration
+Natural Language Input → Context (YAML) → Outline (Markdown) → Story (Markdown)
 ```
 
-## Development
+### Key Components
+
+- **ContextGenerator**: Extracts entities and relationships using OpenAI AI
+- **OutlineGenerator**: Creates story structure from context
+- **StoryWriter**: Generates final bedtime story
+- **EntityRepository**: Interfaces with LightRAG API for entity retrieval
+- **TemplateManager**: Handles template loading and variable substitution
+- **TokenTracker**: Monitors OpenAI API usage and costs
+
+### Design Patterns
+
+- **Pipeline Pattern**: Sequential processing with human intervention points
+- **Repository Pattern**: Abstracted LightRAG API operations
+- **Template Method Pattern**: External templates with variable substitution
+- **Command Pattern**: CLI commands encapsulate operations
+- **Strategy Pattern**: Intelligent context update vs. creation
+
+## 🧪 Development
 
 ### Running Tests
 
 ```bash
+# Run all tests
 uv run pytest
+
+# Run specific test categories
+uv run pytest tests/unit/
+uv run pytest tests/integration/
+uv run pytest tests/performance/
+
+# Run with coverage
+uv run pytest --cov=src/jestir
 ```
 
-### Code Formatting
+### Code Quality
 
 ```bash
+# Format code
 uv run ruff format src/ tests/
-```
 
-### Type Checking
+# Lint code
+uv run ruff check src/ tests/
 
-```bash
+# Type checking
 uv run mypy src/
-```
 
-### Pre-commit Hooks
-
-Install pre-commit hooks:
-```bash
+# Install pre-commit hooks
 uv run pre-commit install
 ```
 
-## License
+### Project Structure
+
+```
+jestir/
+├── src/jestir/              # Main source code
+│   ├── cli.py               # CLI interface
+│   ├── models/              # Data models
+│   ├── services/            # Core services
+│   ├── repositories/        # Data access layer
+│   └── utils/               # Utilities
+├── templates/               # Story templates
+│   ├── prompts/            # AI prompts
+│   └── story_template.txt  # Main story template
+├── tests/                   # Test files
+│   ├── unit/               # Unit tests
+│   ├── integration/        # Integration tests
+│   └── performance/        # Performance tests
+├── docs/                    # Documentation
+├── output/                  # Generated files (gitignored)
+└── pyproject.toml          # Project configuration
+```
+
+## 📚 Documentation
+
+- **[CLI Reference](docs/cli-reference.md)** - Complete command-line interface documentation
+- **[Architecture](docs/architecture.md)** - System architecture and design patterns
+- **[PRD](docs/prd.md)** - Product requirements and specifications
+- **[Template Testing Guide](docs/template-testing-guide.md)** - Template development and testing
+- **[Token Tracking](docs/token-tracking.md)** - Cost management and optimization
+
+## 🎯 Use Cases
+
+### For Parents
+- **Bedtime stories**: Create personalized stories for children ages 3-10
+- **Character continuity**: Build ongoing story worlds with recurring characters
+- **Educational content**: Incorporate specific morals, lessons, or themes
+- **Length control**: Match stories to available reading time
+
+### For Educators
+- **Storytelling workshops**: Generate story prompts and examples
+- **Creative writing**: Use as a tool for teaching narrative structure
+- **Character development**: Explore different character types and relationships
+
+### For Developers
+- **AI integration**: Learn patterns for LLM integration and prompt engineering
+- **Template systems**: Study extensible template and plugin architectures
+- **Cost optimization**: Implement token tracking and usage monitoring
+
+## 🔒 Security & Privacy
+
+- **No PII collection**: No personal information is stored or logged
+- **Local processing**: All story generation happens locally
+- **API key security**: Keys stored in environment variables only
+- **Content safety**: Multi-stage human review prevents inappropriate content
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our contributing guidelines for:
+- Code style and standards
+- Testing requirements
+- Pull request process
+- Issue reporting
+
+## 📄 License
 
 [Add your license here]
 
-## Contributing
+## 🆘 Support
 
-[Add contributing guidelines here]
+- **Documentation**: Check the [docs/](docs/) directory for detailed guides
+- **Issues**: Report bugs and request features via GitHub issues
+- **Discussions**: Join community discussions for questions and ideas
+
+---
+
+**Jestir** - Where imagination meets AI, one story at a time. 🌟
