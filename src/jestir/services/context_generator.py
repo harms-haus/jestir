@@ -11,6 +11,7 @@ from ..models.api_config import ExtractionAPIConfig, LightRAGAPIConfig
 from ..models.entity import Entity
 from ..models.relationship import Relationship
 from ..models.story_context import StoryContext
+from ..utils.lightrag_config import load_lightrag_config
 from .lightrag_client import LightRAGClient
 from .template_loader import TemplateLoader
 from .token_tracker import TokenTracker
@@ -54,14 +55,7 @@ class ContextGenerator:
 
     def _load_lightrag_config_from_env(self) -> LightRAGAPIConfig:
         """Load LightRAG configuration from environment variables."""
-        import os
-
-        return LightRAGAPIConfig(
-            base_url=os.getenv("LIGHTRAG_BASE_URL", "http://localhost:8000"),
-            api_key=os.getenv("LIGHTRAG_API_KEY"),
-            timeout=int(os.getenv("LIGHTRAG_TIMEOUT", "30")),
-            mock_mode=os.getenv("LIGHTRAG_MOCK_MODE", "false").lower() == "true",
-        )
+        return load_lightrag_config()
 
     def generate_context(self, input_text: str) -> StoryContext:
         """Generate a complete story context from natural language input."""

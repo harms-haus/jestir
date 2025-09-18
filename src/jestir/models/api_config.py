@@ -48,7 +48,7 @@ class LightRAGAPIConfig(BaseModel):
     """Configuration for LightRAG API used for entity retrieval."""
 
     base_url: str = Field(
-        default="http://localhost:8000",
+        default="http://localhost:9621",
         description="Base URL for LightRAG API",
     )
     api_key: str | None = Field(

@@ -1,7 +1,6 @@
 """Context validation service for checking context file structure and consistency."""
 
 import asyncio
-import os
 from dataclasses import dataclass
 
 import yaml
@@ -10,6 +9,7 @@ from ..models.api_config import LightRAGAPIConfig
 from ..models.entity import Entity
 from ..models.relationship import Relationship
 from ..models.story_context import StoryContext
+from ..utils.lightrag_config import load_lightrag_config
 from .lightrag_client import LightRAGClient
 
 
@@ -34,12 +34,7 @@ class ContextValidator:
 
     def _load_lightrag_config(self) -> LightRAGAPIConfig:
         """Load LightRAG configuration from environment variables."""
-        return LightRAGAPIConfig(
-            base_url=os.getenv("LIGHTRAG_BASE_URL", "http://localhost:8000"),
-            api_key=os.getenv("LIGHTRAG_API_KEY"),
-            timeout=int(os.getenv("LIGHTRAG_TIMEOUT", "30")),
-            mock_mode=os.getenv("LIGHTRAG_MOCK_MODE", "false").lower() == "true",
-        )
+        return load_lightrag_config()
 
     def validate_context_file(
         self,

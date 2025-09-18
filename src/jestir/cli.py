@@ -18,6 +18,7 @@ from .services.outline_generator import OutlineGenerator
 from .services.story_writer import StoryWriter
 from .services.template_loader import TemplateLoader
 from .services.token_tracker import TokenTracker
+from .utils.lightrag_config import load_lightrag_config
 from .utils.logging_config import (
     get_logger,
     log_command_end,
@@ -1105,7 +1106,7 @@ def search(entity_type, query, filter_type, limit, page, output_format, export):
         click.echo(f"Searching {entity_type} for: '{search_query}'")
 
         config = LightRAGAPIConfig(
-            base_url=os.getenv("LIGHTRAG_BASE_URL", "http://localhost:8000"),
+            base_url=load_lightrag_config().base_url,
             api_key=os.getenv("LIGHTRAG_API_KEY"),
             timeout=int(os.getenv("LIGHTRAG_TIMEOUT", "30")),
             mock_mode=os.getenv("LIGHTRAG_MOCK_MODE", "false").lower() == "true",
@@ -1268,7 +1269,7 @@ def list_entities(entity_type, filter_type, limit, page, output_format, export):
         )
 
         config = LightRAGAPIConfig(
-            base_url=os.getenv("LIGHTRAG_BASE_URL", "http://localhost:8000"),
+            base_url=load_lightrag_config().base_url,
             api_key=os.getenv("LIGHTRAG_API_KEY"),
             timeout=int(os.getenv("LIGHTRAG_TIMEOUT", "30")),
             mock_mode=os.getenv("LIGHTRAG_MOCK_MODE", "false").lower() == "true",
@@ -1395,7 +1396,7 @@ def show(entity_name, entity_type):
         click.echo(f"Getting details for entity: '{entity_name}'")
 
         config = LightRAGAPIConfig(
-            base_url=os.getenv("LIGHTRAG_BASE_URL", "http://localhost:8000"),
+            base_url=load_lightrag_config().base_url,
             api_key=os.getenv("LIGHTRAG_API_KEY"),
             timeout=int(os.getenv("LIGHTRAG_TIMEOUT", "30")),
             mock_mode=os.getenv("LIGHTRAG_MOCK_MODE", "false").lower() == "true",
@@ -1555,7 +1556,7 @@ def fuzzy(name, entity_type):
         click.echo(f"Fuzzy searching for: '{name}'")
 
         config = LightRAGAPIConfig(
-            base_url=os.getenv("LIGHTRAG_BASE_URL", "http://localhost:8000"),
+            base_url=load_lightrag_config().base_url,
             api_key=os.getenv("LIGHTRAG_API_KEY"),
             timeout=int(os.getenv("LIGHTRAG_TIMEOUT", "30")),
             mock_mode=os.getenv("LIGHTRAG_MOCK_MODE", "false").lower() == "true",
