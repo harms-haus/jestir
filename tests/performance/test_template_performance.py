@@ -20,6 +20,7 @@ class TestTemplatePerformance:
     def teardown_method(self):
         """Clean up test fixtures."""
         import shutil
+
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_template_loading_performance(self):
@@ -108,7 +109,8 @@ class TestTemplatePerformance:
         context = {"name": "Alice"}
         start_time = time.time()
         context_result = self.template_loader.validate_template_with_context(
-            template_path, context,
+            template_path,
+            context,
         )
         context_time = time.time() - start_time
 
@@ -157,7 +159,8 @@ class TestTemplatePerformance:
         # Measure debugging time
         start_time = time.time()
         debug_result = self.template_debugger.debug_template_rendering(
-            template_path, context,
+            template_path,
+            context,
         )
         debug_time = time.time() - start_time
 
@@ -171,7 +174,9 @@ class TestTemplatePerformance:
         # Create multiple templates
         template_paths = []
         for i in range(5):
-            template_content = f"Template {i}: {{name}} {{genre}} {{age_appropriate}}" * 100
+            template_content = (
+                f"Template {i}: {{name}} {{genre}} {{age_appropriate}}" * 100
+            )
             template_path = os.path.join(self.temp_dir, f"compare_{i}.txt")
 
             with open(template_path, "w") as f:
@@ -208,7 +213,9 @@ class TestTemplatePerformance:
 
             # Load and render template
             content = self.template_loader.load_template(template_path)
-            rendered = self.template_loader.render_template(template_path, {"name": "Alice"})
+            rendered = self.template_loader.render_template(
+                template_path, {"name": "Alice"},
+            )
 
             # Analyze template
             analysis = self.template_debugger.analyze_template(template_path)
@@ -307,7 +314,9 @@ class TestTemplatePerformance:
 
         # Verify caching works
         assert content1 == content2
-        assert second_load_time < first_load_time * 0.5  # Should be significantly faster
+        assert (
+            second_load_time < first_load_time * 0.5
+        )  # Should be significantly faster
 
         # Test cache hit ratio
         cache_hits = 0

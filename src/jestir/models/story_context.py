@@ -6,6 +6,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 from .entity import Entity
+from .length_spec import LengthSpec
 from .relationship import Relationship
 
 
@@ -36,6 +37,10 @@ class StoryContext(BaseModel):
             "age_appropriate": True,
         },
         description="Genre, tone, length, morals",
+    )
+    length_spec: LengthSpec | None = Field(
+        default=None,
+        description="Detailed length specification for story generation",
     )
     entities: dict[str, Entity] = Field(
         default_factory=dict,
@@ -78,6 +83,22 @@ class StoryContext(BaseModel):
         """Add a plot point to the context."""
         self.plot_points.append(plot_point)
         self._update_timestamp()
+
+    def set_length_spec(self, length_spec: LengthSpec) -> None:
+        """Set the length specification for the story."""
+        self.length_spec = length_spec
+        # Update legacy length setting for backward compatibility
+        self.settings["length"] = length_spec.to_legacy_length()
+        self._update_timestamp()
+
+    def get_effective_length_spec(self) -> LengthSpec:
+        """Get the effective length specification, creating one from legacy settings if needed."""
+        if self.length_spec is not None:
+            return self.length_spec
+
+        # Create from legacy length setting
+        legacy_length = self.settings.get("length", "short")
+        return LengthSpec.from_legacy_length(legacy_length)
 
     def _update_timestamp(self) -> None:
         """Update the updated_at timestamp."""

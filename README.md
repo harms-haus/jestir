@@ -16,6 +16,8 @@ Jestir is a command-line tool that generates personalized bedtime stories throug
 - Entity extraction and relationship mapping
 - Template-based story generation
 - Configurable story parameters (genre, tone, morals)
+- **Advanced length control** with word count and reading time targets
+- **Length validation** with tolerance checking and adjustment suggestions
 - File-based workflow for manual review and editing
 - Integration with LightRAG for character continuity
 
@@ -98,6 +100,51 @@ Generate final story from outline:
 ```bash
 jestir write outline.md
 ```
+
+### Length Control
+
+Jestir now supports precise length control for stories with word count and reading time targets:
+
+**Set length when creating context:**
+```bash
+# Target word count
+jestir context "A brave mouse adventure" --length 500
+
+# Target reading time (3 minutes)
+jestir context "A brave mouse adventure" --length 3m
+
+# Custom tolerance (default is 10%)
+jestir context "A brave mouse adventure" --length 500 --tolerance 15
+```
+
+**Override length for outline generation:**
+```bash
+jestir outline context.yaml --length 300
+jestir outline context.yaml --length 2m --tolerance 20
+```
+
+**Override length for story generation:**
+```bash
+jestir write outline.md --length 400
+jestir write outline.md --length 4m --tolerance 10
+```
+
+**Validate length of generated files:**
+```bash
+# Validate outline length
+jestir validate-length outline.md --type outline --suggestions
+
+# Validate story length
+jestir validate-length story.md --type story --context context.yaml
+```
+
+**Length Control Features:**
+- **Word count targets**: Specify exact word counts (e.g., `--length 500`)
+- **Reading time targets**: Specify reading time in minutes (e.g., `--length 3m`)
+- **Tolerance control**: Set acceptable deviation percentage (default: 10%)
+- **Length validation**: Check if generated content meets length requirements
+- **Adjustment suggestions**: Get specific recommendations for length adjustments
+- **Backward compatibility**: Works with existing legacy length settings (short, medium, long)
 
 ### Command Options
 

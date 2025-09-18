@@ -22,6 +22,7 @@ class TestTemplateMonitor:
     def teardown_method(self):
         """Clean up test fixtures."""
         import shutil
+
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_record_metrics(self):
@@ -105,8 +106,12 @@ class TestTemplateMonitor:
 
         assert summary["status"] == "degraded"
         assert len(summary["performance_issues"]) > 0
-        assert any("Slow processing" in issue for issue in summary["performance_issues"])
-        assert any("Large templates" in issue for issue in summary["performance_issues"])
+        assert any(
+            "Slow processing" in issue for issue in summary["performance_issues"]
+        )
+        assert any(
+            "Large templates" in issue for issue in summary["performance_issues"]
+        )
         assert any("Many variables" in issue for issue in summary["performance_issues"])
 
     def test_template_performance_specific_template(self):
@@ -242,6 +247,7 @@ class TestTemplateMonitor:
 
         # Verify file contents
         import json
+
         with open(export_file) as f:
             data = json.load(f)
 
@@ -314,8 +320,28 @@ class TestTemplateMonitor:
     def test_performance_trends(self):
         """Test performance trend calculation."""
         # Record metrics with improving performance (need at least 20 for trend calculation)
-        processing_times = [200.0, 190.0, 180.0, 170.0, 160.0, 150.0, 140.0, 130.0, 120.0, 110.0,
-                           100.0, 90.0, 80.0, 70.0, 60.0, 50.0, 40.0, 30.0, 20.0, 10.0]
+        processing_times = [
+            200.0,
+            190.0,
+            180.0,
+            170.0,
+            160.0,
+            150.0,
+            140.0,
+            130.0,
+            120.0,
+            110.0,
+            100.0,
+            90.0,
+            80.0,
+            70.0,
+            60.0,
+            50.0,
+            40.0,
+            30.0,
+            20.0,
+            10.0,
+        ]
 
         for i, time_ms in enumerate(processing_times):
             metrics = TemplateMetrics(
@@ -353,6 +379,7 @@ class TestTemplateMonitor:
 
         # Check that metrics were recorded
         from jestir.services.template_monitor import get_global_monitor
+
         monitor = get_global_monitor()
 
         # Should have at least one metric recorded

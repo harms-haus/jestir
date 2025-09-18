@@ -7,6 +7,7 @@ from openai import OpenAI
 
 from ..models.api_config import CreativeAPIConfig
 from ..models.story_context import StoryContext
+from .length_validator import LengthValidator
 from .template_loader import TemplateLoader
 from .token_tracker import TokenTracker
 
@@ -19,12 +20,14 @@ class StoryWriter:
         config: CreativeAPIConfig | None = None,
         template_loader: TemplateLoader | None = None,
         token_tracker: TokenTracker | None = None,
+        length_validator: LengthValidator | None = None,
     ):
         """Initialize the story writer with OpenAI configuration."""
         self.config = config or self._load_config_from_env()
         self.client = OpenAI(api_key=self.config.api_key, base_url=self.config.base_url)
         self.template_loader = template_loader or TemplateLoader()
         self.token_tracker = token_tracker or TokenTracker()
+        self.length_validator = length_validator or LengthValidator()
 
     def _load_config_from_env(self) -> CreativeAPIConfig:
         """Load configuration from environment variables."""
@@ -72,7 +75,24 @@ class StoryWriter:
             if content is None:
                 return self._fallback_story(context, outline)
 
-            return self._format_story(content)
+            story = self._format_story(content)
+
+            # Validate story length
+            length_spec = context.get_effective_length_spec()
+            validation_result = self.length_validator.validate_story_length(
+                story,
+                length_spec,
+            )
+
+            # Log length validation results
+            if hasattr(self, "logger"):
+                self.logger.info(
+                    f"Story length validation: {validation_result['actual_word_count']} words, "
+                    f"target: {validation_result['target_word_count']} words, "
+                    f"deviation: {validation_result['deviation_percent']:.1f}%",
+                )
+
+            return story
 
         except Exception as e:
             # Fallback to basic story if OpenAI fails
@@ -120,14 +140,17 @@ class StoryWriter:
                 for input_id, text in context.user_inputs.items()
             )
 
+            # Get length specification
+            length_spec = context.get_effective_length_spec()
+
             # Prepare context for template
             template_context = {
                 "genre": context.settings.get("genre", "adventure"),
                 "tone": context.settings.get("tone", "gentle"),
                 "length": context.settings.get("length", "short"),
-                "target_word_count": self._get_target_word_count(
-                    context.settings.get("length", "short"),
-                ),
+                "target_word_count": length_spec.get_target_word_count(),
+                "target_reading_time": length_spec.get_target_reading_time(),
+                "length_type": length_spec.length_type,
                 "age_appropriate": context.settings.get("age_appropriate", True),
                 "morals": (
                     ", ".join(context.settings.get("morals", []))

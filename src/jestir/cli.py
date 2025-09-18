@@ -48,8 +48,19 @@ def main(ctx, verbose):
 @main.command()
 @click.argument("input_text")
 @click.option("--output", "-o", default="context.yaml", help="Output context file")
+@click.option(
+    "--length",
+    "-l",
+    help="Target word count (e.g., 500) or reading time (e.g., 5m)",
+)
+@click.option(
+    "--tolerance",
+    "-t",
+    default=10.0,
+    help="Length tolerance percentage (default: 10%)",
+)
 @click.pass_context
-def context(ctx, input_text, output):
+def context(ctx, input_text, output, length, tolerance):
     """Update existing context or create new one from natural language input."""
     logger = get_logger("cli.context")
     log_command_start("context", {"input_text": input_text, "output": output}, logger)
@@ -90,6 +101,17 @@ def context(ctx, input_text, output):
             logger.debug(f"Generating new context from input: {input_text}")
             click.echo(f"Generating new context from: {input_text}")
             updated_context = generator.generate_context(input_text)
+
+        # Set length specification if provided
+        if length:
+            length_spec = _parse_length_spec(length, tolerance)
+            updated_context.set_length_spec(length_spec)
+            logger.debug(
+                f"Set length specification: {length_spec.length_type}={length_spec.target_value}",
+            )
+            click.echo(
+                f"Set length target: {length_spec.get_target_word_count()} words ({length_spec.get_target_reading_time()} minutes)",
+            )
 
         # Save token usage to context
         token_tracker.save_usage_to_context(output)
@@ -172,6 +194,34 @@ def context(ctx, input_text, output):
             )
         log_command_end("context", success=False, logger=logger)
         raise click.Abort()
+
+
+def _parse_length_spec(length_str: str, tolerance: float):
+    """Parse length specification from command line argument."""
+    from ..models.length_spec import LengthSpec
+
+    length_str = length_str.strip().lower()
+
+    # Check if it's a reading time (ends with 'm' or 'min')
+    if length_str.endswith(("m", "min")):
+        try:
+            # Remove "m" or "min" suffix
+            if length_str.endswith("min"):
+                minutes = int(length_str[:-3])
+            else:
+                minutes = int(length_str[:-1])
+            return LengthSpec.from_reading_time(minutes, tolerance_percent=tolerance)
+        except ValueError:
+            raise click.BadParameter(f"Invalid reading time format: {length_str}")
+
+    # Check if it's a word count
+    try:
+        word_count = int(length_str)
+        return LengthSpec.from_word_count(word_count, tolerance_percent=tolerance)
+    except ValueError:
+        raise click.BadParameter(
+            f"Invalid length format: {length_str}. Use word count (e.g., 500) or reading time (e.g., 5m)",
+        )
 
 
 @main.command()
@@ -293,8 +343,19 @@ def context_new(ctx, input_text, output):
 @main.command()
 @click.argument("context_file")
 @click.option("--output", "-o", default="outline.md", help="Output outline file")
+@click.option(
+    "--length",
+    "-l",
+    help="Override target word count (e.g., 500) or reading time (e.g., 5m)",
+)
+@click.option(
+    "--tolerance",
+    "-t",
+    default=10.0,
+    help="Length tolerance percentage (default: 10%)",
+)
 @click.pass_context
-def outline(ctx, context_file, output):
+def outline(ctx, context_file, output, length, tolerance):
     """Generate story outline from context file."""
     logger = get_logger("cli.outline")
     log_command_start(
@@ -324,6 +385,17 @@ def outline(ctx, context_file, output):
         logger.debug(f"Loading context from file: {context_file}")
         context = generator.load_context_from_file(context_file)
         logger.debug("Context loaded successfully")
+
+        # Override length specification if provided
+        if length:
+            length_spec = _parse_length_spec(length, tolerance)
+            context.set_length_spec(length_spec)
+            logger.debug(
+                f"Override length specification: {length_spec.length_type}={length_spec.target_value}",
+            )
+            click.echo(
+                f"Override length target: {length_spec.get_target_word_count()} words ({length_spec.get_target_reading_time()} minutes)",
+            )
 
         # Generate outline
         logger.debug("Starting outline generation")
@@ -426,8 +498,19 @@ def outline(ctx, context_file, output):
     default="context.yaml",
     help="Context file to load and update",
 )
+@click.option(
+    "--length",
+    "-l",
+    help="Override target word count (e.g., 500) or reading time (e.g., 5m)",
+)
+@click.option(
+    "--tolerance",
+    "-t",
+    default=10.0,
+    help="Length tolerance percentage (default: 10%)",
+)
 @click.pass_context
-def write(ctx, outline_file, output, context):
+def write(ctx, outline_file, output, context, length, tolerance):
     """Generate final story from outline file."""
     logger = get_logger("cli.write")
     log_command_start(
@@ -459,6 +542,17 @@ def write(ctx, outline_file, output, context):
         logger.debug(f"Loading context from file: {context}")
         story_context = writer.load_context_from_file(context)
         logger.debug("Outline and context loaded successfully")
+
+        # Override length specification if provided
+        if length:
+            length_spec = _parse_length_spec(length, tolerance)
+            story_context.set_length_spec(length_spec)
+            logger.debug(
+                f"Override length specification: {length_spec.length_type}={length_spec.target_value}",
+            )
+            click.echo(
+                f"Override length target: {length_spec.get_target_word_count()} words ({length_spec.get_target_reading_time()} minutes)",
+            )
 
         # Generate story
         logger.debug("Starting story generation")
@@ -566,6 +660,107 @@ def write(ctx, outline_file, output, context):
                 err=True,
             )
         log_command_end("write", success=False, logger=logger)
+        raise click.Abort()
+
+
+@main.command()
+@click.argument("file_path")
+@click.option(
+    "--type",
+    "file_type",
+    type=click.Choice(["outline", "story"]),
+    required=True,
+    help="Type of file to validate",
+)
+@click.option(
+    "--context",
+    "-c",
+    default="context.yaml",
+    help="Context file for length specifications",
+)
+@click.option(
+    "--suggestions",
+    "-s",
+    is_flag=True,
+    help="Show detailed suggestions for length adjustment",
+)
+@click.pass_context
+def validate_length(ctx, file_path, file_type, context, suggestions):
+    """Validate and analyze length of outline or story files."""
+    logger = get_logger("cli.validate_length")
+    log_command_start(
+        "validate_length",
+        {"file_path": file_path, "file_type": file_type, "context": context},
+        logger,
+    )
+
+    try:
+        import yaml
+
+        from ..models.story_context import StoryContext
+        from ..services.length_validator import LengthValidator
+
+        # Load context for length specifications
+        context_path = Path(context)
+        if not context_path.exists():
+            click.echo(f"❌ Context file not found: {context}", err=True)
+            raise click.Abort()
+
+        with open(context_path, encoding="utf-8") as f:
+            context_data = yaml.safe_load(f)
+
+        story_context = StoryContext(**context_data)
+        length_spec = story_context.get_effective_length_spec()
+
+        # Load file to validate
+        file_path_obj = Path(file_path)
+        if not file_path_obj.exists():
+            click.echo(f"❌ File not found: {file_path}", err=True)
+            raise click.Abort()
+
+        with open(file_path_obj, encoding="utf-8") as f:
+            content = f.read()
+
+        # Validate length
+        validator = LengthValidator()
+
+        if file_type == "outline":
+            result = validator.validate_outline_length(content, length_spec)
+            click.echo("📋 Outline Length Validation")
+        else:
+            result = validator.validate_story_length(content, length_spec)
+            click.echo("📖 Story Length Validation")
+
+        click.echo("=" * 50)
+        click.echo(f"File: {file_path}")
+        click.echo(
+            f"Actual: {result['actual_word_count'] if 'actual_word_count' in result else result['estimated_word_count']} words",
+        )
+        click.echo(f"Target: {result['target_word_count']} words")
+        click.echo(f"Deviation: {result['deviation_percent']:.1f}%")
+        click.echo(
+            f"Within Tolerance: {'✅ Yes' if result['is_within_tolerance'] else '❌ No'}",
+        )
+
+        if file_type == "story" and "reading_time_minutes" in result:
+            click.echo(f"Reading Time: {result['reading_time_minutes']} minutes")
+
+        if suggestions and result["suggestions"]:
+            click.echo("\n💡 Suggestions:")
+            for suggestion in result["suggestions"]:
+                click.echo(f"  • {suggestion}")
+
+        log_command_end("validate_length", success=True, logger=logger)
+
+    except FileNotFoundError as e:
+        logger.error(f"File not found: {e}")
+        click.echo(f"❌ File Not Found: {e!s}", err=True)
+        log_command_end("validate_length", success=False, logger=logger)
+        raise click.Abort()
+    except Exception as e:
+        logger.exception("Length validation error")
+        click.echo(f"❌ Validation Error: {e!s}", err=True)
+        log_command_end("validate_length", success=False, logger=logger)
         raise click.Abort()
 
 

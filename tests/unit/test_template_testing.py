@@ -16,7 +16,9 @@ class TestTemplateSyntaxValidation:
 
         # Create a temporary template file
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-            f.write("Hello {{name}}! This is a {{genre}} story for {{age_appropriate}} children.")
+            f.write(
+                "Hello {{name}}! This is a {{genre}} story for {{age_appropriate}} children.",
+            )
             template_path = f.name
 
         try:
@@ -46,7 +48,9 @@ class TestTemplateSyntaxValidation:
 
         # Create a temporary template file with syntax errors
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-            f.write("Hello {{name! This is a {{genre}} story for {{age_appropriate}} children.")
+            f.write(
+                "Hello {{name! This is a {{genre}} story for {{age_appropriate}} children.",
+            )
             template_path = f.name
 
         try:
@@ -64,7 +68,9 @@ class TestTemplateSyntaxValidation:
         loader = TemplateLoader()
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-            f.write("Hello {{name # protagonist name}}! This is a {{genre # story genre}} story.")
+            f.write(
+                "Hello {{name # protagonist name}}! This is a {{genre # story genre}} story.",
+            )
             template_path = f.name
 
         try:
@@ -134,7 +140,9 @@ class TestTemplateSyntaxValidation:
             result = loader.validate_template_syntax(template_path)
 
             assert result["valid"] is False
-            assert any("Empty variable name" in error for error in result["syntax_errors"])
+            assert any(
+                "Empty variable name" in error for error in result["syntax_errors"]
+            )
 
         finally:
             os.unlink(template_path)
@@ -143,8 +151,12 @@ class TestTemplateSyntaxValidation:
         """Test template with Unicode and special characters."""
         loader = TemplateLoader()
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False, encoding="utf-8") as f:
-            f.write("Hello {{name}}! This is a {{genre}} story with émojis 🎭 and special chars: {{special_chars}}")
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".txt", delete=False, encoding="utf-8",
+        ) as f:
+            f.write(
+                "Hello {{name}}! This is a {{genre}} story with émojis 🎭 and special chars: {{special_chars}}",
+            )
             template_path = f.name
 
         try:
@@ -211,7 +223,9 @@ class TestTemplateSyntaxValidation:
         ]
 
         for template_content, description in test_cases:
-            with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".txt", delete=False,
+            ) as f:
                 f.write(template_content)
                 template_path = f.name
 
@@ -222,7 +236,9 @@ class TestTemplateSyntaxValidation:
                     assert result["valid"] is True, f"Should be valid: {description}"
                 else:
                     assert result["valid"] is False, f"Should be invalid: {description}"
-                    assert len(result["syntax_errors"]) > 0, f"Should have errors: {description}"
+                    assert len(result["syntax_errors"]) > 0, (
+                        f"Should have errors: {description}"
+                    )
 
             finally:
                 os.unlink(template_path)
@@ -238,23 +254,33 @@ class TestTemplateSyntaxValidation:
             ("Hello {{name.123}}! This is valid.", True, "Dot notation"),
             ("Hello {{name[0]}}! This is valid.", True, "Array notation"),
             ("Hello {{123name}}! This is valid.", True, "Starting with number"),
-            ("Hello {{name with spaces}}! This has warnings.", True, "Spaces (warning)"),
+            (
+                "Hello {{name with spaces}}! This has warnings.",
+                True,
+                "Spaces (warning)",
+            ),
             ("Hello {{name@special}}! This is valid.", True, "Special chars"),
             ("Hello {{name#comment}}! This is valid.", True, "Comment syntax"),
         ]
 
         for template_content, should_be_valid, description in test_cases:
-            with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".txt", delete=False,
+            ) as f:
                 f.write(template_content)
                 template_path = f.name
 
             try:
                 result = loader.validate_template_syntax(template_path)
 
-                assert result["valid"] == should_be_valid, f"Validation failed for: {description}"
+                assert result["valid"] == should_be_valid, (
+                    f"Validation failed for: {description}"
+                )
 
                 if "warning" in description.lower():
-                    assert len(result["warnings"]) > 0, f"Should have warnings: {description}"
+                    assert len(result["warnings"]) > 0, (
+                        f"Should have warnings: {description}"
+                    )
 
             finally:
                 os.unlink(template_path)
@@ -273,6 +299,7 @@ class TestTemplateSyntaxValidation:
 
         try:
             import time
+
             start_time = time.time()
             result = loader.validate_template_syntax(template_path)
             validation_time = time.time() - start_time
@@ -289,9 +316,13 @@ class TestTemplateSyntaxValidation:
         loader = TemplateLoader()
 
         # Test with different encodings
-        test_content = "Hello {{name}}! This is a {{genre}} story with émojis 🎭 and accents: café"
+        test_content = (
+            "Hello {{name}}! This is a {{genre}} story with émojis 🎭 and accents: café"
+        )
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False, encoding="utf-8") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".txt", delete=False, encoding="utf-8",
+        ) as f:
             f.write(test_content)
             template_path = f.name
 
@@ -318,7 +349,9 @@ class TestTemplateContextValidation:
         loader = TemplateLoader()
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-            f.write("Hello {{name}}! This is a {{genre}} story for {{age_appropriate}} children.")
+            f.write(
+                "Hello {{name}}! This is a {{genre}} story for {{age_appropriate}} children.",
+            )
             template_path = f.name
 
         try:
@@ -343,7 +376,9 @@ class TestTemplateContextValidation:
         loader = TemplateLoader()
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-            f.write("Hello {{name}}! This is a {{genre}} story for {{age_appropriate}} children.")
+            f.write(
+                "Hello {{name}}! This is a {{genre}} story for {{age_appropriate}} children.",
+            )
             template_path = f.name
 
         try:
@@ -358,7 +393,9 @@ class TestTemplateContextValidation:
             assert result["overall_coverage"] < 1.0
             assert len(result["context_validation"]["missing_in_context"]) == 2
             assert "genre" in result["context_validation"]["missing_in_context"]
-            assert "age_appropriate" in result["context_validation"]["missing_in_context"]
+            assert (
+                "age_appropriate" in result["context_validation"]["missing_in_context"]
+            )
 
         finally:
             os.unlink(template_path)
@@ -402,9 +439,15 @@ class TestTemplateContextValidation:
                 "name": "Alice",
                 "genre": "adventure",
             }
-            required_vars = ["name", "genre", "age_appropriate"]  # Missing age_appropriate
+            required_vars = [
+                "name",
+                "genre",
+                "age_appropriate",
+            ]  # Missing age_appropriate
 
-            result = loader.validate_template_with_context(template_path, context, required_vars)
+            result = loader.validate_template_with_context(
+                template_path, context, required_vars,
+            )
 
             assert result["valid"] is False
             assert "age_appropriate" in result["context_validation"]["missing_required"]
@@ -430,7 +473,10 @@ class TestTemplateContextValidation:
 
             assert result["valid"] is False
             assert len(result["context_validation"]["rendering_errors"]) > 0
-            assert any("Unresolved variables" in error for error in result["context_validation"]["rendering_errors"])
+            assert any(
+                "Unresolved variables" in error
+                for error in result["context_validation"]["rendering_errors"]
+            )
 
         finally:
             os.unlink(template_path)
@@ -463,7 +509,9 @@ class TestTemplateContextValidation:
                 "time_period": "Medieval",
             }
 
-            result = loader.validate_template_with_context(template_path, complete_context)
+            result = loader.validate_template_with_context(
+                template_path, complete_context,
+            )
 
             assert result["valid"] is True
             assert result["overall_coverage"] == 1.0
@@ -502,7 +550,9 @@ class TestTemplateContextValidation:
                 },
             }
 
-            result = loader.validate_template_with_context(template_path, incomplete_context)
+            result = loader.validate_template_with_context(
+                template_path, incomplete_context,
+            )
 
             assert result["valid"] is False
             assert result["overall_coverage"] < 1.0
@@ -612,11 +662,15 @@ class TestTemplateContextValidation:
                 "age": 25,
             }
 
-            result = loader.validate_template_with_context(template_path, required_only_context)
+            result = loader.validate_template_with_context(
+                template_path, required_only_context,
+            )
 
             # Should be invalid because missing optional keys are still required
             assert result["valid"] is False
-            assert result["overall_coverage"] < 1.0  # Less than 100% due to missing keys
+            assert (
+                result["overall_coverage"] < 1.0
+            )  # Less than 100% due to missing keys
 
             # Test with all keys
             complete_context = {
@@ -626,7 +680,9 @@ class TestTemplateContextValidation:
                 "description": "A brave adventurer",
             }
 
-            result = loader.validate_template_with_context(template_path, complete_context)
+            result = loader.validate_template_with_context(
+                template_path, complete_context,
+            )
 
             assert result["valid"] is True
             assert result["overall_coverage"] == 1.0
@@ -671,7 +727,9 @@ class TestTemplateContextValidation:
                 "tag3": "magic",
             }
 
-            result = loader.validate_template_with_context(template_path, complex_context)
+            result = loader.validate_template_with_context(
+                template_path, complex_context,
+            )
 
             assert result["valid"] is True
             assert result["overall_coverage"] == 1.0
@@ -701,6 +759,7 @@ class TestTemplateContextValidation:
             large_context = {f"var_{i}": f"value_{i}" for i in range(100)}
 
             import time
+
             start_time = time.time()
             result = loader.validate_template_with_context(template_path, large_context)
             validation_time = time.time() - start_time
@@ -721,7 +780,9 @@ class TestTemplateRendering:
         loader = TemplateLoader()
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-            f.write("Hello {{name}}! This is a {{genre}} story for {{age_appropriate}} children.")
+            f.write(
+                "Hello {{name}}! This is a {{genre}} story for {{age_appropriate}} children.",
+            )
             template_path = f.name
 
         try:
@@ -746,7 +807,9 @@ class TestTemplateRendering:
         loader = TemplateLoader()
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-            f.write("Hello {{name # protagonist name}}! This is a {{genre # story genre}} story.")
+            f.write(
+                "Hello {{name # protagonist name}}! This is a {{genre # story genre}} story.",
+            )
             template_path = f.name
 
         try:
@@ -769,7 +832,9 @@ class TestTemplateRendering:
         loader = TemplateLoader()
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-            f.write("Hello {{name}}! This is a {{genre}} story for {{age_appropriate}} children.")
+            f.write(
+                "Hello {{name}}! This is a {{genre}} story for {{age_appropriate}} children.",
+            )
             template_path = f.name
 
         try:
@@ -820,7 +885,11 @@ class TestTemplateRendering:
         try:
             context = {
                 "characters": ["Alice", "Bob", "Charlie"],
-                "plot_points": {"beginning": "meeting", "middle": "adventure", "end": "resolution"},
+                "plot_points": {
+                    "beginning": "meeting",
+                    "middle": "adventure",
+                    "end": "resolution",
+                },
             }
 
             result = loader.render_template(template_path, context)
@@ -905,7 +974,9 @@ class TestTemplateEdgeCases:
         loader = TemplateLoader()
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-            f.write("Hello {{name}}! This is a {{genre}} story with {{special-chars}} and {{under_score}}.")
+            f.write(
+                "Hello {{name}}! This is a {{genre}} story with {{special-chars}} and {{under_score}}.",
+            )
             template_path = f.name
 
         try:

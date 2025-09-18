@@ -6,6 +6,7 @@ from openai import OpenAI
 
 from ..models.api_config import CreativeAPIConfig
 from ..models.story_context import StoryContext
+from .length_validator import LengthValidator
 from .template_loader import TemplateLoader
 from .token_tracker import TokenTracker
 
@@ -18,12 +19,14 @@ class OutlineGenerator:
         config: CreativeAPIConfig | None = None,
         template_loader: TemplateLoader | None = None,
         token_tracker: TokenTracker | None = None,
+        length_validator: LengthValidator | None = None,
     ):
         """Initialize the outline generator with OpenAI configuration."""
         self.config = config or self._load_config_from_env()
         self.client = OpenAI(api_key=self.config.api_key, base_url=self.config.base_url)
         self.template_loader = template_loader or TemplateLoader()
         self.token_tracker = token_tracker or TokenTracker()
+        self.length_validator = length_validator or LengthValidator()
 
     def _load_config_from_env(self) -> CreativeAPIConfig:
         """Load configuration from environment variables."""
@@ -71,7 +74,23 @@ class OutlineGenerator:
             if content is None:
                 return self._fallback_outline(context)
 
-            return self._format_outline(content)
+            outline = self._format_outline(content)
+
+            # Validate and optimize outline length
+            length_spec = context.get_effective_length_spec()
+            validation_result = self.length_validator.validate_outline_length(
+                outline,
+                length_spec,
+            )
+
+            if validation_result["adjustment_needed"]:
+                # Try to optimize the outline
+                outline = self.length_validator.optimize_outline_for_length(
+                    outline,
+                    length_spec,
+                )
+
+            return outline
 
         except Exception as e:
             # Fallback to basic outline if OpenAI fails
@@ -119,11 +138,17 @@ class OutlineGenerator:
                 for input_id, text in context.user_inputs.items()
             )
 
+            # Get length specification
+            length_spec = context.get_effective_length_spec()
+
             # Prepare context for template
             template_context = {
                 "genre": context.settings.get("genre", "adventure"),
                 "tone": context.settings.get("tone", "gentle"),
                 "length": context.settings.get("length", "short"),
+                "target_word_count": length_spec.get_target_word_count(),
+                "target_reading_time": length_spec.get_target_reading_time(),
+                "length_type": length_spec.length_type,
                 "age_appropriate": context.settings.get("age_appropriate", True),
                 "morals": (
                     ", ".join(context.settings.get("morals", []))

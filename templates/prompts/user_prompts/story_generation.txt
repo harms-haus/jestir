@@ -3,7 +3,7 @@ Write a complete bedtime story based on the provided outline and context.
 **Story Requirements:**
 - Genre: {{genre#The story genre (adventure, fantasy, mystery, etc.)}}
 - Tone: {{tone#The emotional tone (gentle, exciting, mysterious, etc.)}}
-- Length: {{length#The desired story length (short, medium, long, etc.)}} (aim for {{target_word_count#Target number of words for the story}} words)
+- Length: {{length#The desired story length (short, medium, long, etc.)}} (aim for {{target_word_count#Target number of words for the story}} words, {{target_reading_time#Target reading time in minutes}} minutes)
 - Age Appropriate: {{age_appropriate#Whether content is age-appropriate (true/false)}}
 - Morals: {{morals#Comma-separated list of moral lessons to include}}
 
@@ -36,6 +36,8 @@ Write a complete bedtime story based on the provided outline and context.
 8. End with a clear moral lesson or positive message
 9. Use simple, clear sentences suitable for bedtime reading
 10. Include emotional depth and character growth
+11. **IMPORTANT**: Write approximately {{target_word_count}} words ({{target_reading_time}} minutes reading time)
+12. Monitor your word count and adjust detail level accordingly
 
 **Format the story as:**
 # [Story Title]
