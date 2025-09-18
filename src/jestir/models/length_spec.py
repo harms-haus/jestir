@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class LengthSpec(BaseModel):
@@ -36,13 +36,14 @@ class LengthSpec(BaseModel):
         description="Words per minute for reading time calculations",
     )
 
-    @validator("target_value")
-    def validate_target_value(self, v, values):
+    @field_validator("target_value")
+    @classmethod
+    def validate_target_value(cls, v, info):
         """Validate target value based on length type."""
-        if "length_type" in values:
-            if values["length_type"] == "word_count" and v < 50:
+        if info.data and "length_type" in info.data:
+            if info.data["length_type"] == "word_count" and v < 50:
                 raise ValueError("Word count must be at least 50 words")
-            if values["length_type"] == "reading_time" and v < 1:
+            if info.data["length_type"] == "reading_time" and v < 1:
                 raise ValueError("Reading time must be at least 1 minute")
         return v
 
