@@ -83,3 +83,38 @@
 
 - Contains all entities and relationships
 - Updated at each pipeline stage
+
+## Entity Validation Models
+
+### LightRAGEntity Model
+
+**Purpose:** Represents an entity from LightRAG API with validation metadata
+
+**Key Attributes:**
+
+- name: string - Entity name from LightRAG
+- entity_type: string - Entity type (character|location|item)
+- description: string - Entity description from LightRAG
+- properties: dict - Additional entity properties
+- relationships: list - Entity relationships
+- confidence: float - Validation confidence score (0.0-1.0)
+- similarity_score: float - String similarity score (0.0-1.0)
+
+### EntityMatchResult Model
+
+**Purpose:** Result of entity validation with confidence scoring
+
+**Key Attributes:**
+
+- entity: LightRAGEntity - The matched entity
+- confidence: float - Overall confidence score (0.0-1.0)
+- similarity_score: float - String similarity score (0.0-1.0)
+- is_exact_match: boolean - Whether this is an exact string match
+- is_high_confidence: boolean - Whether confidence meets high threshold
+- match_reason: string - Human-readable reason for the match
+
+**Validation Thresholds:**
+
+- exact_match_threshold: 0.95 (exact string matches)
+- high_confidence_threshold: 0.8 (high confidence matches)
+- low_confidence_threshold: 0.5 (minimum usable matches)

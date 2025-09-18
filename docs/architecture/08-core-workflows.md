@@ -19,6 +19,12 @@ sequenceDiagram
     end
     ContextGen->>LightRAG: POST /query (search existing entities)
     LightRAG-->>ContextGen: return matches
+    ContextGen->>ContextGen: validate entity matches (confidence scoring)
+    alt High confidence match
+        ContextGen->>ContextGen: use entity data
+    else Low confidence match
+        ContextGen->>ContextGen: skip or warn user
+    end
     ContextGen->>OpenAI_EXT: parse natural language to extract entities and relationships
     OpenAI_EXT-->>ContextGen: parsed content
     ContextGen->>FileSystem: write/update context.yaml

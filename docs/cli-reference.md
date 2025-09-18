@@ -223,6 +223,39 @@ Show detailed information about a specific entity.
 jestir show "Lily" --type character
 ```
 
+#### `validate-entity` - Test Entity Validation
+```bash
+jestir validate-entity <entity_name> [options]
+```
+
+Test entity validation and matching with confidence scoring. This command helps verify that LightRAG queries are finding the correct entities and shows detailed match quality information.
+
+**Arguments:**
+- `entity_name` - Name of the entity to search for
+
+**Options:**
+- `--type` - Entity type (character, location, item)
+- `--threshold, -t` - Confidence threshold (0.0-1.0, default: 0.5)
+- `--verbose, -v` - Show detailed validation results
+
+**Examples:**
+```bash
+# Test basic entity validation
+jestir validate-entity "Wendy Whisk"
+
+# Test with specific type and threshold
+jestir validate-entity "whiskers" --type character --threshold 0.8
+
+# Test with verbose output
+jestir validate-entity "Wendy" --type character --verbose
+```
+
+**Output:**
+The command shows all potential matches with confidence scores, similarity scores, and recommendations:
+- ✅ High Confidence: Use this match
+- ⚠️ Moderate Confidence: Verify this match
+- ❌ Low Confidence: This match may not be correct
+
 ### LightRAG API Commands
 
 #### `lightrag test` - Test API Connectivity

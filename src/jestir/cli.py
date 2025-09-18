@@ -1456,6 +1456,127 @@ def show(entity_name, entity_type):
         raise click.Abort()
 
 
+@main.command()
+@click.argument("entity_name")
+@click.option("--type", "entity_type", help="Entity type (character, location, item)")
+@click.option("--threshold", "-t", default=0.5, help="Confidence threshold (0.0-1.0)")
+@click.option("--verbose", "-v", is_flag=True, help="Show detailed validation results")
+def validate_entity(entity_name, entity_type, threshold, verbose):
+    """Test entity validation and matching with confidence scoring."""
+    try:
+        click.echo(f"Testing entity validation for: '{entity_name}'")
+        if entity_type:
+            click.echo(f"Entity type: {entity_type}")
+        click.echo(f"Confidence threshold: {threshold}")
+        click.echo()
+
+        config = LightRAGAPIConfig(
+            base_url=load_lightrag_config().base_url,
+            api_key=os.getenv("LIGHTRAG_API_KEY"),
+            timeout=int(os.getenv("LIGHTRAG_TIMEOUT", "30")),
+            mock_mode=os.getenv("LIGHTRAG_MOCK_MODE", "false").lower() == "true",
+        )
+
+        client = LightRAGClient(config)
+
+        # Import entity validator
+        from .services.entity_validator import EntityValidator
+
+        validator = EntityValidator(
+            exact_match_threshold=0.95,
+            high_confidence_threshold=0.8,
+            low_confidence_threshold=threshold,
+        )
+
+        # Search for entities
+        search_results = asyncio.run(
+            client.fuzzy_search_entities(
+                entity_name,
+                entity_type=entity_type,
+                require_validation=True,
+            ),
+        )
+
+        if not search_results:
+            click.echo("❌ No entities found matching your search.")
+            return
+
+        click.echo(f"Found {len(search_results)} potential matches:")
+        click.echo()
+
+        for i, entity in enumerate(search_results, 1):
+            confidence = entity.confidence or 0.0
+            similarity = entity.similarity_score or 0.0
+
+            # Determine match quality
+            if confidence >= 0.8:
+                status = "✅ High Confidence"
+                color = "green"
+            elif confidence >= threshold:
+                status = "⚠️  Moderate Confidence"
+                color = "yellow"
+            else:
+                status = "❌ Low Confidence"
+                color = "red"
+
+            click.echo(f"{i}. {status}")
+            click.echo(f"   Name: {entity.name}")
+            click.echo(f"   Type: {entity.entity_type}")
+            click.echo(f"   Confidence: {confidence:.3f}")
+            click.echo(f"   Similarity: {similarity:.3f}")
+
+            if entity.description:
+                desc_preview = (
+                    entity.description[:100] + "..."
+                    if len(entity.description) > 100
+                    else entity.description
+                )
+                click.echo(f"   Description: {desc_preview}")
+
+            if verbose and entity.properties:
+                click.echo("   Properties:")
+                for key, value in entity.properties.items():
+                    click.echo(f"     {key}: {value}")
+
+            click.echo()
+
+        # Show recommendation
+        best_match = search_results[0]
+        best_confidence = best_match.confidence or 0.0
+
+        if best_confidence >= 0.8:
+            click.echo("✅ Recommendation: Use this match - high confidence")
+        elif best_confidence >= threshold:
+            click.echo("⚠️  Recommendation: Verify this match - moderate confidence")
+        else:
+            click.echo(
+                "❌ Recommendation: This match may not be correct - low confidence",
+            )
+            click.echo(
+                "   Consider refining your search or checking if the entity exists",
+            )
+
+    except Exception as e:
+        error_msg = str(e).lower()
+        if (
+            "connection" in error_msg
+            or "timeout" in error_msg
+            or "refused" in error_msg
+        ):
+            click.echo(
+                f"❌ Connection Error: Cannot reach LightRAG API - {e!s}",
+                err=True,
+            )
+            click.echo("💡 Troubleshooting:", err=True)
+            click.echo(f"   • Check LIGHTRAG_BASE_URL: {config.base_url}", err=True)
+            click.echo("   • Verify LightRAG service is running", err=True)
+            click.echo("   • Check your network connection", err=True)
+            click.echo("   • Try using mock mode: LIGHTRAG_MOCK_MODE=true", err=True)
+        else:
+            click.echo(f"❌ Error: {e!s}", err=True)
+        raise click.Abort()
+
+
 @main.group()
 def lightrag():
     """LightRAG API testing and validation commands."""

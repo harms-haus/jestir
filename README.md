@@ -15,6 +15,7 @@ Jestir is a command-line tool that creates personalized bedtime stories through 
 ### 🌍 **Consistent World-Building**
 - **Entity continuity**: Characters and locations persist across multiple stories
 - **LightRAG integration**: Query existing characters, locations, and items from previous stories
+- **Entity validation**: Confidence scoring prevents incorrect entity matches (e.g., "whiskers" → "Wendy Whisk")
 - **Relationship tracking**: Maintains connections between story elements
 - **Provenance tracking**: Records where each entity was first mentioned
 
@@ -191,6 +192,13 @@ jestir list locations --type exterior --format table
 # Get detailed information about specific entities
 jestir show "Lily" --type character
 jestir show "Magic Forest" --type location
+```
+
+**Test entity validation:**
+```bash
+# Test entity matching with confidence scoring
+jestir validate-entity "whiskers" --type character
+jestir validate-entity "Wendy" --threshold 0.8 --verbose
 ```
 
 ### Validation and Testing

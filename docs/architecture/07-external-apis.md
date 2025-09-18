@@ -41,6 +41,7 @@
 - Can request structured data formats (JSON) via response_type parameter
 - Supports conversation history for context-aware responses
 - Token management for controlling response length and context size
+- **Entity Validation:** All entity matches are validated with confidence scoring to prevent incorrect matches
 
 ## LightRAG API Endpoint Details
 
@@ -92,6 +93,48 @@
 ```
 
 **Usage:** Used to understand what types of entities are available in the knowledge graph for querying.
+
+## Entity Validation System
+
+The system includes a sophisticated entity validation mechanism to ensure accurate entity matching when querying LightRAG. This prevents incorrect matches like searching for "whiskers" and incorrectly finding "Wendy Whisk".
+
+### Validation Features
+
+**Confidence Scoring:**
+- **Similarity Score (0.0-1.0):** String similarity between search query and entity name
+- **Confidence Score (0.0-1.0):** Overall match quality considering multiple factors
+- **Type Matching:** Bonus for matching entity types, penalty for mismatches
+- **Description Quality:** Bonus for entities with rich descriptions
+- **Properties Bonus:** Bonus for entities with additional properties
+
+**Match Quality Levels:**
+- **High Confidence (≥0.8):** ✅ Use this match - likely correct
+- **Moderate Confidence (0.5-0.8):** ⚠️ Verify this match - may be correct
+- **Low Confidence (<0.5):** ❌ This match may not be correct
+
+**Validation Process:**
+1. Search LightRAG with multiple query variations
+2. Calculate similarity scores for all matches
+3. Apply confidence scoring based on multiple factors
+4. Sort results by confidence and similarity
+5. Only use matches above the confidence threshold (default: 0.5)
+6. Log detailed match quality information
+
+### Configuration
+
+**Default Thresholds:**
+- `exact_match_threshold`: 0.95 (exact string matches)
+- `high_confidence_threshold`: 0.8 (high confidence matches)
+- `low_confidence_threshold`: 0.5 (minimum usable matches)
+
+**Example Validation Results:**
+```
+Query: "whiskers" → Entity: "Wendy Whisk"
+- Similarity Score: 0.526 (moderate)
+- Confidence: 0.726 (below high confidence)
+- Result: ⚠️ Moderate confidence match - Please verify this is the correct entity
+- Action: Only used if confidence ≥ 0.5, otherwise skipped
+```
 
 ### GET /graphs
 

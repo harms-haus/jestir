@@ -11,6 +11,7 @@
 - `outline` command → OutlineGenerator
 - `write` command → StoryWriter
 - Search/list commands → EntityRepository
+- `validate-entity` command → EntityValidator (test entity matching)
 - Manual data entry commands → EntityRepository
 
 **Dependencies:** Click framework, all service components
@@ -28,8 +29,9 @@
 - `load_context_from_file(file_path: str) → StoryContext` - Loads existing context from YAML file
 - `extract_entities(text: str) → List[Entity]` - Uses OpenAI AI to parse natural language and identify entities
 - `extract_relationships(text: str, entities: List[Entity]) → List[Relationship]` - Uses OpenAI AI to parse natural language and extract relationships
+- `_enrich_entities_with_lightrag(entities: List[Entity]) → List[Entity]` - Enriches entities with LightRAG data using validation
 
-**Dependencies:** EntityRepository, TemplateManager, OpenAIClient (Extraction)
+**Dependencies:** EntityRepository, EntityValidator, TemplateManager, OpenAIClient (Extraction)
 
 **Technology Stack:** Pydantic for validation, PyYAML for serialization, OpenAI SDK for information extraction
 
@@ -74,6 +76,21 @@
 **Dependencies:** LightRAG API
 
 **Technology Stack:** HTTP client for LightRAG API, read-only operations using REST endpoints
+
+## EntityValidator Component
+
+**Responsibility:** Validate and score entity matches from LightRAG queries to prevent incorrect matches
+
+**Key Interfaces:**
+
+- `validate_entity_match(query: str, entity: LightRAGEntity, entity_type: Optional[str]) → EntityMatchResult`  # Validate single match
+- `filter_high_confidence_matches(matches: List[EntityMatchResult]) → List[EntityMatchResult]`  # Filter by confidence
+- `get_best_match(matches: List[EntityMatchResult]) → Optional[EntityMatchResult]`  # Get best match
+- `should_require_confirmation(match: EntityMatchResult) → bool`  # Check if confirmation needed
+
+**Dependencies:** LightRAGEntity model
+
+**Technology Stack:** String similarity algorithms (SequenceMatcher), configurable thresholds, confidence scoring
 
 ## TemplateManager Component
 

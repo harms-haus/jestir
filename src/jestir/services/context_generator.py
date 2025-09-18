@@ -288,49 +288,75 @@ Extract all mentioned characters, locations, items, and their relationships. Mar
                     f"Searching LightRAG for entity: {entity.name} (type: {entity.type})",
                 )
 
-                # Search for existing entity in LightRAG
+                # Search for existing entity in LightRAG with validation
                 search_results = await self.lightrag_client.fuzzy_search_entities(
                     entity.name,
                     entity_type=entity.type,
+                    require_validation=True,
                 )
 
                 if search_results:
-                    # Found existing entity, update with LightRAG data
-                    lightrag_entity = search_results[0]  # Take the best match
-                    logger.info(
-                        f"Found existing entity in LightRAG: {lightrag_entity.name} -> {entity.name}",
-                    )
+                    # Get the best match (already sorted by confidence)
+                    lightrag_entity = search_results[0]
 
-                    # Update entity with existing data
-                    entity.existing = True
-                    entity.rag_id = f"rag_{entity.id}"
+                    # Log match quality information
+                    confidence = lightrag_entity.confidence or 0.0
+                    similarity = lightrag_entity.similarity_score or 0.0
 
-                    # Enhance description with LightRAG data
-                    if lightrag_entity.description:
-                        original_desc = entity.description
-                        entity.description = lightrag_entity.description
-                        logger.debug(
-                            f"Enhanced description for {entity.name}: '{original_desc}' -> '{entity.description[:100]}...'",
+                    if confidence >= 0.8:
+                        logger.info(
+                            f"High confidence match: '{lightrag_entity.name}' for '{entity.name}' "
+                            f"(confidence: {confidence:.2f}, similarity: {similarity:.2f})",
+                        )
+                    elif confidence >= 0.5:
+                        logger.warning(
+                            f"Moderate confidence match: '{lightrag_entity.name}' for '{entity.name}' "
+                            f"(confidence: {confidence:.2f}, similarity: {similarity:.2f}) - "
+                            f"Please verify this is the correct entity",
+                        )
+                    else:
+                        logger.warning(
+                            f"Low confidence match: '{lightrag_entity.name}' for '{entity.name}' "
+                            f"(confidence: {confidence:.2f}, similarity: {similarity:.2f}) - "
+                            f"This may not be the correct entity",
                         )
 
-                    # Merge properties
-                    if lightrag_entity.properties:
-                        if entity.properties is None:
-                            entity.properties = {}
-                        original_props = entity.properties.copy()
-                        entity.properties.update(lightrag_entity.properties)
-                        logger.debug(
-                            f"Updated properties for {entity.name}: {original_props} -> {entity.properties}",
-                        )
+                    # Only use the match if it meets minimum confidence threshold
+                    if confidence >= 0.5:
+                        # Update entity with existing data
+                        entity.existing = True
+                        entity.rag_id = f"rag_{entity.id}"
 
-                    # Add relationships if available
-                    if lightrag_entity.relationships:
-                        entity.properties = entity.properties or {}
-                        entity.properties["relationships"] = (
-                            lightrag_entity.relationships
-                        )
-                        logger.debug(
-                            f"Added relationships for {entity.name}: {lightrag_entity.relationships}",
+                        # Enhance description with LightRAG data
+                        if lightrag_entity.description:
+                            original_desc = entity.description
+                            entity.description = lightrag_entity.description
+                            logger.debug(
+                                f"Enhanced description for {entity.name}: '{original_desc}' -> '{entity.description[:100]}...'",
+                            )
+
+                        # Merge properties
+                        if lightrag_entity.properties:
+                            if entity.properties is None:
+                                entity.properties = {}
+                            original_props = entity.properties.copy()
+                            entity.properties.update(lightrag_entity.properties)
+                            logger.debug(
+                                f"Updated properties for {entity.name}: {original_props} -> {entity.properties}",
+                            )
+
+                        # Add relationships if available
+                        if lightrag_entity.relationships:
+                            entity.properties = entity.properties or {}
+                            entity.properties["relationships"] = (
+                                lightrag_entity.relationships
+                            )
+                            logger.debug(
+                                f"Added relationships for {entity.name}: {lightrag_entity.relationships}",
+                            )
+                    else:
+                        logger.info(
+                            f"Skipping low confidence match for '{entity.name}' - using original entity data",
                         )
                 else:
                     logger.debug(

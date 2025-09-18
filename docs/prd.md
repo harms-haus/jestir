@@ -39,6 +39,8 @@ Current AI story generation tools lack two critical features: consistent world-b
 - FR10: The context system shall maintain complete story memory including settings, entities, relationships, and generation history
 - FR11: The system shall support iterative context building through natural language prompts that update existing contexts
 - FR12: The system shall preserve all user prompts in the context file for complete conversation history
+- FR13: The system shall validate entity matches from LightRAG queries with confidence scoring to prevent incorrect matches (e.g., "whiskers" → "Wendy Whisk")
+- FR14: The system shall provide configurable confidence thresholds for entity matching with user warnings for low-confidence matches
 
 ### Non Functional
 
@@ -205,7 +207,7 @@ so that I can verify the system works as designed.
 
 ## Epic 2: Templates & LightRAG Integration
 
-**Epic Goal:** Integrate LightRAG for read-only entity retrieval and implement the template system for extensible prompt management.
+**Epic Goal:** Integrate LightRAG for read-only entity retrieval with validation, implement the template system for extensible prompt management, and ensure accurate entity matching through confidence scoring.
 
 ### Story 2.1: LightRAG Integration
 
@@ -252,7 +254,23 @@ so that I can reference them in new stories.
 5. Output in readable table format
 6. Export option to YAML for context file use
 
-### Story 2.4: Context Validation Command
+### Story 2.4: Entity Validation System
+
+As a parent,
+I want the system to validate entity matches from LightRAG queries with confidence scoring,
+so that incorrect matches like "whiskers" → "Wendy Whisk" are prevented.
+
+**Acceptance Criteria:**
+
+1. Entity validation with confidence scoring (0.0-1.0) based on string similarity and type matching
+2. Configurable confidence thresholds (default: 0.5 minimum, 0.8 high confidence)
+3. User warnings for moderate confidence matches requiring verification
+4. Low confidence matches (<0.5) are skipped by default
+5. Command `jestir validate-entity "query" --type character` for testing entity matching
+6. Detailed logging of match quality and confidence scores
+7. Integration with context generation to validate all entity matches
+
+### Story 2.5: Context Validation Command
 
 As a parent,
 I want to validate a context file before generation,

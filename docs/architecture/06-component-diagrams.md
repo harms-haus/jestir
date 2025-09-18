@@ -14,6 +14,7 @@ graph TD
 
     subgraph "Repository Layer"
         ER[Entity Repository]
+        EV[Entity Validator]
         TM[Template Manager]
         TT[Token Tracker]
     end
@@ -30,6 +31,7 @@ graph TD
     CLI --> ER
 
     CG --> ER
+    CG --> EV
     CG --> TM
     CG --> OAI
 
@@ -42,6 +44,7 @@ graph TD
     SW --> TT
 
     ER --> LR
+    ER --> EV
     TM --> FS
     OAI --> TT
 ```

@@ -24,6 +24,8 @@ class LightRAGEntity:
     description: str | None = None
     properties: dict[str, Any] | None = None
     relationships: list[str] | None = None
+    confidence: float | None = None
+    similarity_score: float | None = None
 
 
 @dataclass
@@ -407,16 +409,18 @@ class LightRAGClient:
         self,
         name: str,
         entity_type: str | None = None,
+        require_validation: bool = True,
     ) -> list[LightRAGEntity]:
         """
-        Perform fuzzy search for entities by name with variations.
+        Perform fuzzy search for entities by name with variations and validation.
 
         Args:
             name: Entity name to search for
             entity_type: Optional entity type filter
+            require_validation: Whether to validate and score matches
 
         Returns:
-            List of matching entities
+            List of matching entities with confidence scoring
         """
         # Try different search variations
         search_variations = [
@@ -447,6 +451,33 @@ class LightRAGClient:
 
             except Exception:
                 continue
+
+        # Validate and score matches if required
+        if require_validation and all_results:
+            from .entity_validator import EntityValidator
+
+            validator = EntityValidator()
+
+            validated_results = []
+            for entity in all_results:
+                match_result = validator.validate_entity_match(
+                    name,
+                    entity,
+                    entity_type,
+                )
+
+                # Add confidence and similarity scores to entity
+                entity.confidence = match_result.confidence
+                entity.similarity_score = match_result.similarity_score
+
+                validated_results.append(entity)
+
+            # Sort by confidence and similarity score
+            all_results = sorted(
+                validated_results,
+                key=lambda e: (e.confidence or 0, e.similarity_score or 0),
+                reverse=True,
+            )
 
         return all_results
 
