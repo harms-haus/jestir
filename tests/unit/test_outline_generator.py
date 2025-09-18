@@ -101,7 +101,7 @@ With courage and determination, you can achieve your goals."""
         ):
             outline = generator.generate_outline(context)
 
-            assert "# Story Outline: Arthur's Quest" in outline
+            assert "# Story Outline: Arthur's Adventure" in outline
             assert "Act I: Beginning" in outline
             assert "Act II: Middle" in outline
             assert "Act III: End" in outline

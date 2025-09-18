@@ -80,6 +80,10 @@ class TestContextGenerator:
                 ],
             },
         )
+        # Add usage attribute to mock
+        mock_response.usage = Mock()
+        mock_response.usage.prompt_tokens = 100
+        mock_response.usage.completion_tokens = 50
 
         with patch.object(
             self.generator.client.chat.completions,

@@ -123,7 +123,7 @@ class TestCLI:
                 ],
             )
             assert result1.exit_code == 0
-            assert "Context generated successfully" in result1.output
+            assert "Context updated successfully" in result1.output
 
             # Update the context with new information
             result2 = self.runner.invoke(

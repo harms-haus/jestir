@@ -211,13 +211,21 @@ Extract all mentioned characters, locations, items, and their relationships. Mar
 
             relationships = []
             for rel_data in data.get("relationships", []):
-                relationship = Relationship(**rel_data)
-                relationships.append(relationship)
+                try:
+                    relationship = Relationship(**rel_data)
+                    relationships.append(relationship)
+                except Exception as rel_error:
+                    # Log the relationship parsing error but continue
+                    logger.warning(
+                        f"Failed to parse relationship {rel_data}: {rel_error}",
+                    )
+                    continue
 
             return entities, relationships
 
         except Exception as e:
             # Fallback to basic extraction
+            logger.warning(f"Failed to parse extraction response: {e}")
             return self._fallback_extraction(content)
 
     def _fallback_extraction(

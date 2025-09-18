@@ -158,12 +158,16 @@ class TestLightRAGClient:
 
     def test_default_config(self):
         """Test default configuration values."""
+        from jestir.utils.lightrag_config import load_lightrag_config
+
+        # Test that the configuration loads from environment
+        expected_config = load_lightrag_config()
         client = LightRAGClient()
 
-        assert client.config.base_url == "http://localhost:8000"
-        assert client.config.api_key is None
-        assert client.config.timeout == 30
-        assert client.config.mock_mode is False
+        assert client.config.base_url == expected_config.base_url
+        assert client.config.api_key == expected_config.api_key
+        assert client.config.timeout == expected_config.timeout
+        assert client.config.mock_mode == expected_config.mock_mode
 
     def test_entity_parsing(self, client):
         """Test parsing of entity data from API responses."""

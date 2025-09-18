@@ -2196,7 +2196,7 @@ def debug_template(ctx, template_path, context, analyze, performance, compare):
     help="Report period",
 )
 @click.option(
-    "--format",
+    "--output-format",
     "-f",
     type=click.Choice(["table", "json", "yaml"]),
     default="table",
@@ -2210,7 +2210,7 @@ def stats(ctx, context, period, output_format, export, suggestions):
     logger = get_logger("cli.stats")
     log_command_start(
         "stats",
-        {"context": context, "period": period, "format": output_format},
+        {"context": context, "period": period, "output_format": output_format},
         logger,
     )
 

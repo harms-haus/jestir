@@ -99,10 +99,8 @@ class LightRAGClient:
         if self.config.mock_mode:
             return self._mock_search_entities(query, entity_type, mode, top_k)
 
-        # Build the search query
-        search_query = query
-        if entity_type:
-            search_query = f"Find {entity_type}s: {query}"
+        # Build the search query with JSON schema specification
+        search_query = self._build_structured_query(query, entity_type)
 
         # Prepare request payload with enhanced parameters
         payload = {
@@ -210,10 +208,8 @@ class LightRAGClient:
         if self.config.mock_mode:
             return self._mock_search_entities(query, entity_type, mode, top_k)
 
-        # Build the search query
-        search_query = query
-        if entity_type:
-            search_query = f"Find {entity_type}s: {query}"
+        # Build the search query with JSON schema specification
+        search_query = self._build_structured_query(query, entity_type)
 
         # Prepare request payload
         payload = {
@@ -335,9 +331,10 @@ class LightRAGClient:
                 if not exists_response.json().get("exists", False):
                     return None
 
-                # Get entity details via query
+                # Get entity details via structured query
+                structured_query = self._build_entity_details_query(entity_name)
                 payload = {
-                    "query": f"Tell me about {entity_name}",
+                    "query": structured_query,
                     "mode": "local",
                     "response_type": "JSON",
                     "top_k": 5,
@@ -526,6 +523,183 @@ class LightRAGClient:
             logger.warning(f"Unexpected LightRAG health check error: {e}")
             return None
 
+    def _build_structured_query(
+        self,
+        query: str,
+        entity_type: str | None = None,
+    ) -> str:
+        """
+        Build a structured query with JSON schema specification for consistent parsing.
+
+        Args:
+            query: Original search query
+            entity_type: Optional entity type filter
+
+        Returns:
+            Structured query with JSON schema instructions
+        """
+        # Define the JSON schema for entity responses
+        json_schema = {
+            "entities": [
+                {
+                    "name": "string",
+                    "type": "string (character|location|item|event|organization|unknown)",
+                    "description": "string (optional)",
+                    "properties": "object (optional)",
+                    "relationships": "array of strings (optional)",
+                },
+            ],
+        }
+
+        # Build the base query
+        base_query = f"Find {entity_type}s: {query}" if entity_type else query
+
+        # Create the structured prompt
+        structured_prompt = f"""{base_query}
+
+Please respond with a JSON object containing the entities found. Use this exact format:
+
+{json.dumps(json_schema, indent=2)}
+
+Example response:
+{{
+  "entities": [
+    {{
+      "name": "Character Name",
+      "type": "character",
+      "description": "A brief description of the character",
+      "properties": {{"age": 25, "role": "protagonist"}},
+      "relationships": ["other_character", "location"]
+    }}
+  ]
+}}
+
+Return only the JSON object, no additional text or explanations."""
+
+        return structured_prompt
+
+    def _build_entity_details_query(self, entity_name: str) -> str:
+        """
+        Build a structured query for getting entity details with JSON schema.
+
+        Args:
+            entity_name: Name of the entity to get details for
+
+        Returns:
+            Structured query with JSON schema instructions
+        """
+        # Define the JSON schema for entity details response
+        json_schema = {
+            "entity": {
+                "name": "string",
+                "type": "string (character|location|item|event|organization|unknown)",
+                "description": "string (optional)",
+                "properties": "object (optional)",
+                "relationships": "array of strings (optional)",
+            },
+        }
+
+        # Create the structured prompt
+        structured_prompt = f"""Tell me about {entity_name}.
+
+Please respond with a JSON object containing the entity details. Use this exact format:
+
+{json.dumps(json_schema, indent=2)}
+
+Example response:
+{{
+  "entity": {{
+    "name": "{entity_name}",
+    "type": "character",
+    "description": "A detailed description of the entity",
+    "properties": {{"age": 25, "role": "protagonist"}},
+    "relationships": ["other_character", "location"]
+  }}
+}}
+
+Return only the JSON object, no additional text or explanations."""
+
+        return structured_prompt
+
+    def _parse_structured_json_response(
+        self,
+        response_text: str,
+    ) -> list[LightRAGEntity]:
+        """
+        Parse structured JSON response from LightRAG API.
+
+        Args:
+            response_text: Raw response text from the API
+
+        Returns:
+            List of parsed entities
+        """
+        entities = []
+
+        try:
+            # Try to parse the entire response as JSON
+            response_data = json.loads(response_text)
+
+            # Check if it's the expected structured format
+            if isinstance(response_data, dict) and "entities" in response_data:
+                entities_data = response_data["entities"]
+                if isinstance(entities_data, list):
+                    for entity_data in entities_data:
+                        if isinstance(entity_data, dict) and "name" in entity_data:
+                            entity = LightRAGEntity(
+                                name=entity_data.get("name", ""),
+                                entity_type=entity_data.get("type", "unknown"),
+                                description=entity_data.get("description"),
+                                properties=entity_data.get("properties", {}),
+                                relationships=entity_data.get("relationships", []),
+                            )
+                            entities.append(entity)
+
+        except json.JSONDecodeError:
+            # If full JSON parsing fails, try to extract JSON from the text
+            try:
+                # Look for JSON object patterns in the response
+                json_pattern = r'\{[^{}]*"entities"[^{}]*\[[^\]]*\][^{}]*\}'
+                json_matches = re.findall(
+                    json_pattern,
+                    response_text,
+                    re.IGNORECASE | re.DOTALL,
+                )
+
+                for match in json_matches:
+                    try:
+                        response_data = json.loads(match)
+                        if "entities" in response_data and isinstance(
+                            response_data["entities"],
+                            list,
+                        ):
+                            for entity_data in response_data["entities"]:
+                                if (
+                                    isinstance(entity_data, dict)
+                                    and "name" in entity_data
+                                ):
+                                    entity = LightRAGEntity(
+                                        name=entity_data.get("name", ""),
+                                        entity_type=entity_data.get("type", "unknown"),
+                                        description=entity_data.get("description"),
+                                        properties=entity_data.get("properties", {}),
+                                        relationships=entity_data.get(
+                                            "relationships",
+                                            [],
+                                        ),
+                                    )
+                                    entities.append(entity)
+                    except json.JSONDecodeError:
+                        continue
+
+            except Exception:
+                pass
+
+        except Exception:
+            pass
+
+        return entities
+
     def _get_headers(self) -> dict[str, str]:
         """Get HTTP headers for API requests."""
         headers = {"Content-Type": "application/json"}
@@ -543,8 +717,12 @@ class LightRAGClient:
         entities = []
         response_text = response.get("response", "")
 
-        # Try to extract entities from the response text
-        entities = self._extract_entities_from_text(response_text, query)
+        # First try to parse as structured JSON response
+        entities = self._parse_structured_json_response(response_text)
+
+        # If no entities found, fall back to pattern-based extraction
+        if not entities:
+            entities = self._extract_entities_from_text(response_text, query)
 
         return LightRAGSearchResult(
             entities=entities,
@@ -653,6 +831,23 @@ class LightRAGClient:
         """Parse entity details from LightRAG API response."""
         response_text = response.get("response", "")
 
+        # Try to parse structured JSON response first
+        try:
+            response_data = json.loads(response_text)
+            if isinstance(response_data, dict) and "entity" in response_data:
+                entity_data = response_data["entity"]
+                if isinstance(entity_data, dict) and "name" in entity_data:
+                    return LightRAGEntity(
+                        name=entity_data.get("name", entity_name),
+                        entity_type=entity_data.get("type", "unknown"),
+                        description=entity_data.get("description"),
+                        properties=entity_data.get("properties", {}),
+                        relationships=entity_data.get("relationships", []),
+                    )
+        except (json.JSONDecodeError, KeyError, TypeError):
+            pass
+
+        # Fallback to simple text parsing
         return LightRAGEntity(
             name=entity_name,
             entity_type="unknown",
