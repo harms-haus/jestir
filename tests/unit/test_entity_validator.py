@@ -1,8 +1,8 @@
 """Tests for entity validation service."""
 
 import pytest
-from src.jestir.services.entity_validator import EntityValidator, EntityMatchResult
-from src.jestir.services.lightrag_client import LightRAGEntity
+from jestir.services.entity_validator import EntityValidator, EntityMatchResult
+from jestir.services.lightrag_client import LightRAGEntity
 
 
 class TestEntityValidator:

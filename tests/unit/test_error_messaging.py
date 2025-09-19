@@ -161,10 +161,10 @@ class TestErrorMessaging:
     def test_api_error_detection_in_context_command(self):
         """Test API error detection and helpful messaging."""
         with patch(
-            "jestir.services.context_generator.ContextGenerator.generate_context",
-        ) as mock_generate:
+            "jestir.services.context_generator.ContextGenerator.update_context",
+        ) as mock_update:
             # Simulate OpenAI API error
-            mock_generate.side_effect = Exception(
+            mock_update.side_effect = Exception(
                 "OpenAI API error: insufficient credits",
             )
 

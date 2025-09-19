@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 import re
+from difflib import SequenceMatcher
 
 from openai import OpenAI
 
@@ -12,7 +13,7 @@ from ..models.entity import Entity
 from ..models.relationship import Relationship
 from ..models.story_context import StoryContext
 from ..utils.lightrag_config import load_lightrag_config
-from .lightrag_client import LightRAGClient
+from .lightrag_client import LightRAGClient, LightRAGSearchResult
 from .template_loader import TemplateLoader
 from .token_tracker import TokenTracker
 
@@ -93,7 +94,19 @@ class ContextGenerator:
         self,
         input_text: str,
     ) -> tuple[list[Entity], list[Relationship]]:
-        """Extract entities and relationships using OpenAI."""
+        """Extract entities and relationships using enhanced LightRAG + OpenAI approach."""
+        try:
+            # First try the enhanced LightRAG-based extraction
+            entities, relationships = asyncio.run(
+                self._extract_entities_with_lightrag_labels(input_text),
+            )
+            if entities:
+                return entities, relationships
+        except Exception as e:
+            logger.warning(f"Enhanced LightRAG extraction failed: {e}")
+            logger.info("Falling back to standard OpenAI extraction")
+
+        # Fallback to standard OpenAI extraction
         prompt = self._build_extraction_prompt(input_text)
 
         try:
@@ -276,6 +289,729 @@ Extract all mentioned characters, locations, items, and their relationships. Mar
                 plot_points.append(match.strip())
 
         return plot_points
+
+    async def _extract_entities_with_lightrag_labels(
+        self,
+        input_text: str,
+    ) -> tuple[list[Entity], list[Relationship]]:
+        """Enhanced entity extraction using LightRAG graph labels and iterative querying."""
+        try:
+            # Step 1: Get available graph labels from LightRAG
+            graph_labels = await self.lightrag_client.get_available_entity_types()
+            if not graph_labels:
+                logger.warning("No graph labels available from LightRAG")
+                return [], []
+
+            logger.debug(f"Retrieved {len(graph_labels)} graph labels from LightRAG")
+
+            # Step 2: Extract entity names using OpenAI with graph labels
+            entity_names = await self._extract_entity_names_with_labels(
+                input_text,
+                graph_labels,
+            )
+            if not entity_names:
+                logger.info(f"No entity names extracted from input:\n{input_text}")
+                return [], []
+
+            logger.debug(f"Extracted {len(entity_names)} entity names: {entity_names}")
+
+            # Step 3: Iteratively query for entity information
+            entities = await self._iterative_entity_lookup(entity_names, graph_labels)
+
+            # Step 4: Extract relationships using OpenAI with graph labels
+            relationships = await self._extract_relationships_with_labels(
+                input_text,
+                entities,
+                graph_labels,
+            )
+
+            return entities, relationships
+
+        except Exception as e:
+            logger.error(f"Enhanced LightRAG extraction failed: {e}")
+            # Fallback to OpenAI with graph labels if we have them
+            if graph_labels:
+                try:
+                    return await self._fallback_extraction_with_labels(
+                        input_text,
+                        graph_labels,
+                    )
+                except Exception as fallback_error:
+                    logger.error(
+                        f"Fallback extraction with labels also failed: {fallback_error}",
+                    )
+                    raise
+            else:
+                raise
+
+    async def _extract_entity_names_with_labels(
+        self,
+        input_text: str,
+        graph_labels: list[str],
+    ) -> list[str]:
+        """Extract entity names from prompt using OpenAI with graph node labels."""
+        try:
+            # Create a prompt that asks OpenAI to identify which graph labels are mentioned
+
+            prompt = f"""
+Analyze the following story_input and identify which graph_labels from the knowledge base are likely to refer to entities mentioned in the story_input.
+
+<graph_labels>{", ".join(graph_labels)}</graph_labels>
+
+<story_input>{input_text}</story_input>
+
+Respond with this exact JSON structure:
+{{
+    "mentioned_labels": ["label1", "label2", "label3"]
+}}
+
+Only include graph_labels that you are confident are likely to refer to entities mentioned in the story_input. Be conservative.
+
+IMPORTANT: Return only the JSON object, no additional text or explanations.
+"""
+
+            response = self.client.chat.completions.create(
+                model=self.config.model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert at analyzing story input and identifying which entities from a knowledge base are mentioned.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                max_tokens=500,
+                temperature=0.1,
+            )
+
+            # Track token usage
+            if hasattr(response, "usage") and response.usage:
+                self.token_tracker.track_usage(
+                    service="context_generator",
+                    operation="extract_entity_names_with_labels",
+                    model=self.config.model,
+                    prompt_tokens=response.usage.prompt_tokens,
+                    completion_tokens=response.usage.completion_tokens,
+                    input_text=input_text,
+                    output_text=response.choices[0].message.content or "",
+                )
+
+            content = response.choices[0].message.content
+
+            logger.debug(f"Entity names with labels response: {response}")
+            if content:
+                return self._parse_entity_names_response(content)
+
+        except Exception as e:
+            logger.warning(f"Failed to extract entity names with labels: {e}")
+
+        return []
+
+    def _parse_entity_names_response(self, content: str) -> list[str]:
+        """Parse entity names from OpenAI response."""
+        try:
+            # Extract JSON from response
+            json_match = re.search(r"\{.*\}", content, re.DOTALL)
+            if not json_match:
+                return []
+
+            data = json.loads(json_match.group())
+            mentioned_labels = data.get("mentioned_labels", [])
+
+            if isinstance(mentioned_labels, list):
+                return [label for label in mentioned_labels if isinstance(label, str)]
+
+        except Exception as e:
+            logger.warning(
+                f"Failed to parse entity names response: {e}\nRESPONSE:\n{content}",
+            )
+
+        return []
+
+    async def _iterative_entity_lookup(
+        self,
+        entity_names: list[str],
+        graph_labels: list[str],
+    ) -> list[Entity]:
+        """Iteratively query for entity information until list is empty or no results."""
+        entities: list[Entity] = []
+        remaining_names = entity_names.copy()
+
+        logger.debug(
+            f"Starting iterative lookup with {len(remaining_names)} entity names",
+        )
+
+        while remaining_names:
+            logger.debug(
+                f"Querying for {len(remaining_names)} remaining entities: {remaining_names}",
+            )
+
+            # Query for information about all remaining entities
+            query_result = await self._query_entities_data(remaining_names)
+
+            if not query_result or not query_result.entities:
+                logger.debug("No entities found in query result, stopping iteration")
+                break
+
+            # Find matches and extract descriptions
+            found_entities = []
+            for entity_data in query_result.entities:
+                # Try to match entity name to remaining names
+                matched_name = self._find_matching_entity_name(
+                    entity_data.name,
+                    remaining_names,
+                )
+                if matched_name:
+                    # Create Entity object
+                    entity = Entity(
+                        id=f"char_{len(entities) + 1:03d}",
+                        type=entity_data.entity_type,
+                        subtype=self._determine_subtype(entity_data.entity_type),
+                        name=entity_data.name,
+                        description=entity_data.description
+                        or f"Entity: {entity_data.name}",
+                        existing=True,
+                        rag_id=f"rag_{len(entities) + 1:03d}",
+                        properties=entity_data.properties or {},
+                    )
+                    entities.append(entity)
+                    found_entities.append(matched_name)
+                    logger.debug(f"Found entity: {entity_data.name} -> {matched_name}")
+
+            # Remove found entities from remaining list
+            for found_name in found_entities:
+                if found_name in remaining_names:
+                    remaining_names.remove(found_name)
+
+            # If no entities were found in this iteration, stop
+            if not found_entities:
+                logger.debug("No entities found in this iteration, stopping")
+                break
+
+            logger.debug(
+                f"Found {len(found_entities)} entities, {len(remaining_names)} remaining",
+            )
+
+        logger.info(f"Iterative lookup complete: found {len(entities)} entities")
+        return entities
+
+    async def _query_entities_data(
+        self,
+        entity_names: list[str],
+    ) -> LightRAGSearchResult:
+        """Query LightRAG for information about specific entities."""
+        if not entity_names:
+            return LightRAGSearchResult(
+                entities=[],
+                total_count=0,
+                query="",
+                mode="mix",
+            )
+
+        try:
+            # Create a query that asks for information about the specific entities
+            query = f"""
+Get detailed information about each of the following entities:
+{", ".join(entity_names)}
+
+For each entity, provide:
+- Name
+- Type (character, location, item, etc.)
+- Description
+- Properties
+- Relationships
+
+Return the information in a structured format.
+"""
+
+            # Use the search_entities method
+            search_result = await self.lightrag_client.search_entities(
+                query=query,
+                mode="mix",
+                top_k=len(entity_names) * 2,  # Get more results to ensure we find all
+                max_total_tokens=4000,
+            )
+
+            return search_result
+
+        except Exception as e:
+            logger.error(f"Failed to query entities data: {e}")
+            return LightRAGSearchResult(
+                entities=[],
+                total_count=0,
+                query="",
+                mode="mix",
+            )
+
+    def _find_matching_entity_name(
+        self,
+        entity_name: str,
+        remaining_names: list[str],
+    ) -> str | None:
+        """Find which remaining name matches the entity name."""
+        entity_lower = entity_name.lower()
+
+        # Try exact match first
+        for name in remaining_names:
+            if name.lower() == entity_lower:
+                return name
+
+        # Try partial match
+        for name in remaining_names:
+            if name.lower() in entity_lower or entity_lower in name.lower():
+                return name
+
+        # Try similarity matching
+        from difflib import SequenceMatcher
+
+        best_match = None
+        best_score = 0.0
+
+        for name in remaining_names:
+            similarity = SequenceMatcher(None, name.lower(), entity_lower).ratio()
+            if similarity > best_score and similarity > 0.6:  # Minimum threshold
+                best_score = similarity
+                best_match = name
+
+        return best_match
+
+    def _determine_subtype(self, entity_type: str) -> str:
+        """Determine entity subtype based on entity type."""
+        subtype_mapping = {
+            "character": "protagonist",
+            "location": "exterior",
+            "item": "everyday",
+            "event": "story_event",
+            "organization": "group",
+        }
+        return subtype_mapping.get(entity_type, "unknown")
+
+    def _generate_candidate_phrases(self, input_text: str) -> list[str]:
+        """Generate candidate phrases from input text with proper noun filtering."""
+        # Common short words that are not part of proper nouns
+        common_short_words = {
+            "the",
+            "a",
+            "an",
+            "and",
+            "or",
+            "but",
+            "in",
+            "on",
+            "at",
+            "to",
+            "for",
+            "of",
+            "with",
+            "by",
+            "from",
+            "up",
+            "about",
+            "into",
+            "through",
+            "during",
+            "before",
+            "after",
+            "above",
+            "below",
+            "between",
+            "among",
+            "is",
+            "are",
+            "was",
+            "were",
+            "be",
+            "been",
+            "being",
+            "have",
+            "has",
+            "had",
+            "do",
+            "does",
+            "did",
+            "will",
+            "would",
+            "could",
+            "should",
+            "may",
+            "might",
+            "can",
+            "must",
+            "shall",
+            "this",
+            "that",
+            "these",
+            "those",
+            "i",
+            "you",
+            "he",
+            "she",
+            "it",
+            "we",
+            "they",
+            "me",
+            "him",
+            "her",
+            "us",
+            "them",
+            "my",
+            "your",
+            "his",
+            "its",
+            "our",
+            "their",
+            "what",
+            "when",
+            "where",
+            "why",
+            "how",
+            "who",
+            "which",
+            "whose",
+            "whom",
+        }
+
+        # Split into words and clean them
+        words = re.findall(r"\b\w+\b", input_text.lower())
+        words = [word for word in words if len(word) > 1]
+
+        phrases = set()
+
+        # Add single words (excluding common short words)
+        for word in words:
+            if word not in common_short_words and len(word) > 2:
+                phrases.add(word)
+
+        # Add neighboring pairs (excluding those starting/ending with common words)
+        for i in range(len(words) - 1):
+            pair = f"{words[i]} {words[i + 1]}"
+            if (
+                words[i] not in common_short_words
+                and words[i + 1] not in common_short_words
+            ):
+                phrases.add(pair)
+
+        # Add neighboring trios (excluding those starting/ending with common words)
+        for i in range(len(words) - 2):
+            trio = f"{words[i]} {words[i + 1]} {words[i + 2]}"
+            if (
+                words[i] not in common_short_words
+                and words[i + 2] not in common_short_words
+            ):
+                phrases.add(trio)
+
+        # Convert back to original case for better matching
+        original_phrases = set()
+        for phrase in phrases:
+            # Find the phrase in original text to preserve case
+            phrase_lower = phrase.lower()
+            start_pos = input_text.lower().find(phrase_lower)
+            if start_pos != -1:
+                original_phrase = input_text[start_pos : start_pos + len(phrase)]
+                original_phrases.add(original_phrase)
+
+        return list(original_phrases)
+
+    def _calculate_similarity_scores(
+        self,
+        candidate_phrases: list[str],
+        graph_labels: list[str],
+    ) -> list[tuple[str, str, float]]:
+        """Calculate similarity scores between candidate phrases and graph labels."""
+        scored_matches = []
+
+        for phrase in candidate_phrases:
+            best_match = None
+            best_score = 0.0
+
+            for label in graph_labels:
+                # Use SequenceMatcher for similarity scoring
+                similarity = SequenceMatcher(
+                    None,
+                    phrase.lower(),
+                    label.lower(),
+                ).ratio()
+
+                if similarity > best_score:
+                    best_score = similarity
+                    best_match = label
+
+            if best_match and best_score > 0.3:  # Minimum threshold
+                scored_matches.append((phrase, best_match, best_score))
+
+        # Sort by similarity score (highest first)
+        scored_matches.sort(key=lambda x: x[2], reverse=True)
+        return scored_matches
+
+    def _select_best_matches(
+        self,
+        scored_matches: list[tuple[str, str, float]],
+    ) -> list[str]:
+        """Select the best matches ensuring one phrase per entity."""
+        selected_phrases = []
+        used_labels = set()
+
+        for phrase, label, score in scored_matches:
+            if (
+                label not in used_labels and score >= 0.9
+            ):  # Higher threshold for selection
+                selected_phrases.append(phrase)
+                used_labels.add(label)
+                logger.debug(
+                    f"Selected phrase '{phrase}' -> '{label}' (score: {score:.3f})",
+                )
+
+        return selected_phrases
+
+    async def _batch_lookup_entities(self, phrases: list[str]) -> list[Entity]:
+        """Batch lookup entities using LightRAG."""
+        if not phrases:
+            return []
+
+        try:
+            # Create a batch query for LightRAG
+            query = f"""
+Get information about each of the following entities separately.
+<entities>{", ".join(phrases)}</entities>"""
+
+            # Use the search_entities method with a specific prompt
+            search_result = await self.lightrag_client.search_entities(
+                query=query,
+                mode="mix",
+                top_k=len(phrases) * 2,  # Get more results to ensure we find all
+                max_total_tokens=4000,
+            )
+
+            entities: list[Entity] = []
+            for entity_data in search_result.entities:
+                try:
+                    # Parse the entity data from LightRAG response
+                    entity = Entity(
+                        id=f"char_{len(entities) + 1:03d}",
+                        type=entity_data.entity_type,
+                        subtype="unknown",  # LightRAGEntity doesn't have subtype, use default
+                        name=entity_data.name,
+                        description=entity_data.description
+                        or f"Entity: {entity_data.name}",
+                        existing=True,
+                        rag_id=f"rag_{len(entities) + 1:03d}",
+                        properties=entity_data.properties or {},
+                    )
+                    entities.append(entity)
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to parse entity from LightRAG response: {e}\nRESPONSE:\n{search_result.response_text}",
+                    )
+                    continue
+
+            logger.info(
+                f"Successfully looked up {len(entities)} entities from LightRAG",
+            )
+            return entities
+
+        except Exception as e:
+            logger.error(f"Batch entity lookup failed: {e}")
+            # Fallback: create basic entities from phrases
+            return self._create_fallback_entities(phrases)
+
+    def _create_fallback_entities(self, phrases: list[str]) -> list[Entity]:
+        """Create fallback entities when LightRAG batch lookup fails."""
+        entities = []
+        for i, phrase in enumerate(phrases):
+            entity = Entity(
+                id=f"char_{i + 1:03d}",
+                type="character",
+                subtype="protagonist",
+                name=phrase,
+                description=f"Entity mentioned in story: {phrase}",
+                existing=False,
+            )
+            entities.append(entity)
+        return entities
+
+    async def _extract_relationships_with_labels(
+        self,
+        input_text: str,
+        entities: list[Entity],
+        graph_labels: list[str],
+    ) -> list[Relationship]:
+        """Extract relationships using OpenAI with graph labels context."""
+        try:
+            # Build a prompt that includes the graph labels for better context
+            entity_names = [entity.name for entity in entities]
+            labels_context = f"Available entity types in the knowledge base: {', '.join(graph_labels[:20])}"  # Limit to first 20 labels
+
+            prompt = f"""
+Analyze the following story input and extract relationships between the mentioned entities.
+
+{labels_context}
+
+Mentioned entities: {", ".join(entity_names)}
+
+Return a JSON response with this exact structure:
+{{
+    "relationships": [
+        {{
+            "type": "visits",
+            "subject": "entity_name_1",
+            "object": "entity_name_2",
+            "location": null,
+            "mentioned_at": ["original text reference"],
+            "metadata": {{}}
+        }}
+    ]
+}}
+
+Relationship types: visits, finds, creates, owns, meets, helps, fights, talks_to, goes_to, discovers
+
+Story input: "{input_text}"
+
+Extract all relationships between the mentioned entities.
+"""
+
+            response = self.client.chat.completions.create(
+                model=self.config.model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert at analyzing story input and extracting structured relationship information.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                max_tokens=self.config.max_tokens,
+                temperature=self.config.temperature,
+            )
+
+            # Track token usage
+            if hasattr(response, "usage") and response.usage:
+                self.token_tracker.track_usage(
+                    service="context_generator",
+                    operation="extract_relationships_with_labels",
+                    model=self.config.model,
+                    prompt_tokens=response.usage.prompt_tokens,
+                    completion_tokens=response.usage.completion_tokens,
+                    input_text=input_text,
+                    output_text=response.choices[0].message.content or "",
+                )
+
+            content = response.choices[0].message.content
+            if content:
+                return self._parse_relationships_from_response(content)
+
+        except Exception as e:
+            logger.warning(f"Failed to extract relationships with labels: {e}")
+
+        return []
+
+    def _parse_relationships_from_response(self, content: str) -> list[Relationship]:
+        """Parse relationships from OpenAI response."""
+        try:
+            # Extract JSON from response
+            json_match = re.search(r"\{.*\}", content, re.DOTALL)
+            if not json_match:
+                return []
+
+            data = json.loads(json_match.group())
+            relationships = []
+
+            for rel_data in data.get("relationships", []):
+                try:
+                    relationship = Relationship(**rel_data)
+                    relationships.append(relationship)
+                except Exception as e:
+                    logger.warning(f"Failed to parse relationship {rel_data}: {e}")
+                    continue
+
+            return relationships
+
+        except Exception as e:
+            logger.warning(f"Failed to parse relationships response: {e}")
+            return []
+
+    async def _fallback_extraction_with_labels(
+        self,
+        input_text: str,
+        graph_labels: list[str],
+    ) -> tuple[list[Entity], list[Relationship]]:
+        """Fallback extraction using OpenAI with graph labels context."""
+        try:
+            # Build a prompt that includes the graph labels for better entity extraction
+            labels_context = f"Available entity types in the knowledge base: {', '.join(graph_labels[:20])}"
+
+            prompt = f"""
+Analyze the following story input and extract entities and relationships.
+
+{labels_context}
+
+Return a JSON response with this exact structure:
+{{
+    "entities": [
+        {{
+            "id": "char_001",
+            "type": "character",
+            "subtype": "protagonist",
+            "name": "Character Name",
+            "description": "Brief description",
+            "existing": false,
+            "properties": {{}}
+        }}
+    ],
+    "relationships": [
+        {{
+            "type": "visits",
+            "subject": "char_001",
+            "object": "loc_001",
+            "location": null,
+            "mentioned_at": ["original text reference"],
+            "metadata": {{}}
+        }}
+    ]
+}}
+
+Entity types: character, location, item
+Character subtypes: protagonist, antagonist, supporting, animal
+Location subtypes: interior, exterior, magical, real
+Item subtypes: magical, tool, treasure, everyday
+
+Relationship types: visits, finds, creates, owns, meets, helps, fights, talks_to, goes_to, discovers
+
+Story input: "{input_text}"
+
+Extract all mentioned characters, locations, items, and their relationships. Choose entity types from the available knowledge base when possible.
+"""
+
+            response = self.client.chat.completions.create(
+                model=self.config.model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert at analyzing story input and extracting structured information with knowledge base context.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                max_tokens=self.config.max_tokens,
+                temperature=self.config.temperature,
+            )
+
+            # Track token usage
+            if hasattr(response, "usage") and response.usage:
+                self.token_tracker.track_usage(
+                    service="context_generator",
+                    operation="fallback_extraction_with_labels",
+                    model=self.config.model,
+                    prompt_tokens=response.usage.prompt_tokens,
+                    completion_tokens=response.usage.completion_tokens,
+                    input_text=input_text,
+                    output_text=response.choices[0].message.content or "",
+                )
+
+            content = response.choices[0].message.content
+            if content:
+                return self._parse_extraction_response(content)
+            return [], []
+
+        except Exception as e:
+            logger.error(f"Fallback extraction with labels failed: {e}")
+            return [], []
 
     async def _enrich_entities_with_lightrag(
         self,

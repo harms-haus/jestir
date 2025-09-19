@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.jestir.models.length_spec import LengthSpec
+from jestir.models.length_spec import LengthSpec
 
 
 class TestLengthSpec:

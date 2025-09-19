@@ -1,7 +1,7 @@
 """Tests for length validator service."""
 
-from src.jestir.models.length_spec import LengthSpec
-from src.jestir.services.length_validator import LengthValidator
+from jestir.models.length_spec import LengthSpec
+from jestir.services.length_validator import LengthValidator
 
 
 class TestLengthValidator:

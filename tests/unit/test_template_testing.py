@@ -967,7 +967,7 @@ class TestTemplateEdgeCases:
         result = loader.validate_template_syntax("nonexistent.txt")
 
         assert result["valid"] is False
-        assert "Failed to load template" in result["error"]
+        assert "Template file not found" in result["error"]
 
     def test_template_with_special_characters(self):
         """Test template with special characters in variables."""

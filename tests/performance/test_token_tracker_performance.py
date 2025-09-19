@@ -203,7 +203,8 @@ class TestTokenTrackerPerformance:
 
             # Should load quickly (within 0.3 seconds)
             assert load_time < 0.3
-            assert len(new_tracker.usage_history) == 1000
+            # Only last 50 records are saved to context file
+            assert len(new_tracker.usage_history) == 50
 
         finally:
             Path(context_file).unlink(missing_ok=True)

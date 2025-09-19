@@ -1836,7 +1836,14 @@ def template(ctx, template_path, name, context, dry_run, validate, debug):
                                     ] = entity["description"]
 
                     # Add other common variables
-                    for key in ["genre", "tone", "length", "age_appropriate", "morals"]:
+                    for key in [
+                        "name",
+                        "genre",
+                        "tone",
+                        "length",
+                        "age_appropriate",
+                        "morals",
+                    ]:
                         if key in context_data:
                             context_vars[key] = context_data[key]
 
@@ -1846,24 +1853,24 @@ def template(ctx, template_path, name, context, dry_run, validate, debug):
                 click.echo(f"Warning: Could not load context file: {e}")
                 logger.warning(f"Context loading failed: {e}")
 
-        # Add name parameter if provided
-        if name:
-            context_vars["name"] = name
-            context_vars["protagonist"] = name
-            context_vars["character"] = name
+        # Add some default test variables
+        default_vars = {
+            "name": name or "Test Character",
+            "protagonist": name or "Test Character",
+            "character": name or "Test Character",
+            "genre": "adventure",
+            "tone": "friendly",
+            "length": "short",
+            "age_appropriate": "5-8 years",
+            "morals": "friendship and courage",
+        }
 
-        # Add some default test variables if none provided
-        if not context_vars:
-            context_vars = {
-                "name": name or "Test Character",
-                "protagonist": name or "Test Character",
-                "character": name or "Test Character",
-                "genre": "adventure",
-                "tone": "friendly",
-                "length": "short",
-                "age_appropriate": "5-8 years",
-                "morals": "friendship and courage",
-            }
+        # Merge with existing context variables, with context taking precedence
+        for key, value in default_vars.items():
+            if key not in context_vars:
+                context_vars[key] = value
+
+        if not context:
             click.echo("Using default test variables")
 
         # Validate template with context if we have context variables
@@ -1939,6 +1946,9 @@ def template(ctx, template_path, name, context, dry_run, validate, debug):
             else:
                 click.echo("\n✅ All variables resolved successfully")
 
+        except FileNotFoundError:
+            # Re-raise FileNotFoundError so it can be caught by the outer handler
+            raise
         except Exception as e:
             click.echo(f"❌ Template rendering error: {e}")
             log_command_end("template", success=False, logger=logger)

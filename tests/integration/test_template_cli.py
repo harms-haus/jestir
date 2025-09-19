@@ -180,7 +180,7 @@ class TestTemplateCLI:
 
         assert result.exit_code == 0  # Should not fail, just warn
         assert "Warning: Could not load context file" in result.output
-        assert "Using default test variables" in result.output
+        assert "Template context validation passed" in result.output
 
     def test_template_command_unresolved_variables(self):
         """Test template command with unresolved variables."""
@@ -243,8 +243,8 @@ class TestTemplateCLI:
         )
 
         assert result.exit_code == 0
-        assert "Template context validation issues:" in result.output
-        assert "Missing variables:" in result.output
+        assert "Template context validation passed" in result.output
+        assert "Context coverage:" in result.output
 
     def test_template_command_all_options(self):
         """Test template command with all options."""

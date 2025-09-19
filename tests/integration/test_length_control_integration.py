@@ -5,11 +5,11 @@ from pathlib import Path
 
 import pytest
 
-from src.jestir.models.length_spec import LengthSpec
-from src.jestir.models.story_context import StoryContext
-from src.jestir.services.length_validator import LengthValidator
-from src.jestir.services.outline_generator import OutlineGenerator
-from src.jestir.services.story_writer import StoryWriter
+from jestir.models.length_spec import LengthSpec
+from jestir.models.story_context import StoryContext
+from jestir.services.length_validator import LengthValidator
+from jestir.services.outline_generator import OutlineGenerator
+from jestir.services.story_writer import StoryWriter
 
 
 class TestLengthControlIntegration:
