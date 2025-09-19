@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import httpx
+import yaml
 
 from ..models.api_config import LightRAGAPIConfig
 from ..utils.lightrag_config import load_lightrag_config
@@ -542,16 +543,13 @@ class LightRAGClient:
         Returns:
             Structured query with JSON schema instructions
         """
-        # Define the JSON schema for entity responses
-        json_schema = [
-            {
-                "name": "string",
-                "type": "string (character|location|item|event|organization|unknown)",
-                "description": "string",
-                "properties": "object (optional)",
-                "relationships": "array of strings (optional)",
-            },
-        ]
+        # Define the YAML schema for entity responses
+        yaml_schema = """entities:
+  - name: string
+    type: character|location|item|event|organization|unknown
+    description: string
+    properties: object (optional)
+    relationships: array of strings (optional)"""
 
         # Build the base query
         base_query = f"Find {entity_type}s: {query}" if entity_type else query
@@ -559,75 +557,74 @@ class LightRAGClient:
         # Create the structured prompt
         structured_prompt = f"""{base_query}
 
-Format your response in JSON ONLY, with NO REFERENCES PRESENT.
-The response should be an array of JSON objects with this exact format:
+Format your response in YAML ONLY, with NO REFERENCES PRESENT.
+The response should be a YAML structure with this exact format:
 
-{json.dumps(json_schema, indent=2)}
+{yaml_schema}
 
 Example response:
-[
-  {{
-    "name": "Character Name",
-    "type": "character",
-    "description": "A brief description of the character",
-    "properties": {{"age": 25, "role": "protagonist"}},
-    "relationships": ["other_character", "location"]
-  }}
-]
+entities:
+  - name: Character Name
+    type: character
+    description: A brief description of the character
+    properties:
+      age: 25
+      role: protagonist
+    relationships:
+      - other_character
+      - location
 
-IMPORTANT: Return only the JSON object, no additional text, references, or explanations."""
+IMPORTANT: Return only the YAML object, no additional text, references, or explanations."""
 
         return structured_prompt
 
     def _build_entity_details_query(self, entity_name: str) -> str:
         """
-        Build a structured query for getting entity details with JSON schema.
+        Build a structured query for getting entity details with YAML schema.
 
         Args:
             entity_name: Name of the entity to get details for
 
         Returns:
-            Structured query with JSON schema instructions
+            Structured query with YAML schema instructions
         """
-        # Define the JSON schema for entity details response
-        json_schema = {
-            "entity": {
-                "name": "string",
-                "type": "string (character|location|item|event|organization|unknown)",
-                "description": "string (optional)",
-                "properties": "object (optional)",
-                "relationships": "array of strings (optional)",
-            },
-        }
+        # Define the YAML schema for entity details response
+        yaml_schema = """entity:
+  name: string
+  type: character|location|item|event|organization|unknown
+  description: string (optional)
+  properties: object (optional)
+  relationships: array of strings (optional)"""
 
         # Create the structured prompt
         structured_prompt = f"""Tell me about {entity_name}.
 
-Please respond with a JSON object containing the entity details. Use this exact format:
+Please respond with a YAML object containing the entity details. Use this exact format:
 
-{json.dumps(json_schema, indent=2)}
+{yaml_schema}
 
 Example response:
-{{
-  "entity": {{
-    "name": "{entity_name}",
-    "type": "character",
-    "description": "A detailed description of the entity",
-    "properties": {{"age": 25, "role": "protagonist"}},
-    "relationships": ["other_character", "location"]
-  }}
-}}
+entity:
+  name: {entity_name}
+  type: character
+  description: A detailed description of the entity
+  properties:
+    age: 25
+    role: protagonist
+  relationships:
+    - other_character
+    - location
 
-Return only the JSON object, no additional text or explanations."""
+Return only the YAML object, no additional text or explanations."""
 
         return structured_prompt
 
-    def _parse_structured_json_response(
+    def _parse_structured_yaml_response(
         self,
         response_text: str,
     ) -> list[LightRAGEntity]:
         """
-        Parse structured JSON response from LightRAG API.
+        Parse structured YAML response from LightRAG API.
 
         Args:
             response_text: Raw response text from the API
@@ -638,35 +635,39 @@ Return only the JSON object, no additional text or explanations."""
         entities = []
 
         try:
-            # Try to parse the entire response as JSON
-            response_data = json.loads(response_text)
+            # Try to parse the entire response as YAML
+            response_data = yaml.safe_load(response_text)
 
             # Check if it's the expected structured format
-            for entity_data in response_data:
-                if isinstance(entity_data, dict) and "name" in entity_data:
-                    entity = LightRAGEntity(
-                        name=entity_data.get("name", ""),
-                        entity_type=entity_data.get("type", "unknown"),
-                        description=entity_data.get("description"),
-                        properties=entity_data.get("properties", {}),
-                        relationships=entity_data.get("relationships", []),
-                    )
-                    entities.append(entity)
+            if "entities" in response_data and isinstance(
+                response_data["entities"],
+                list,
+            ):
+                for entity_data in response_data["entities"]:
+                    if isinstance(entity_data, dict) and "name" in entity_data:
+                        entity = LightRAGEntity(
+                            name=entity_data.get("name", ""),
+                            entity_type=entity_data.get("type", "unknown"),
+                            description=entity_data.get("description"),
+                            properties=entity_data.get("properties", {}),
+                            relationships=entity_data.get("relationships", []),
+                        )
+                        entities.append(entity)
 
-        except json.JSONDecodeError:
-            # If full JSON parsing fails, try to extract JSON from the text
+        except yaml.YAMLError:
+            # If full YAML parsing fails, try to extract YAML from the text
             try:
-                # Look for JSON object patterns in the response
-                json_pattern = r'\{[^{}]*"entities"[^{}]*\[[^\]]*\][^{}]*\}'
-                json_matches = re.findall(
-                    json_pattern,
+                # Look for YAML entity patterns in the response
+                yaml_pattern = r"entities:.*?(?=\n\w+:|$)"
+                yaml_matches = re.findall(
+                    yaml_pattern,
                     response_text,
                     re.IGNORECASE | re.DOTALL,
                 )
 
-                for match in json_matches:
+                for match in yaml_matches:
                     try:
-                        response_data = json.loads(match)
+                        response_data = yaml.safe_load(match)
                         if "entities" in response_data and isinstance(
                             response_data["entities"],
                             list,
@@ -687,7 +688,7 @@ Return only the JSON object, no additional text or explanations."""
                                         ),
                                     )
                                     entities.append(entity)
-                    except json.JSONDecodeError:
+                    except yaml.YAMLError:
                         continue
 
             except Exception:
@@ -719,8 +720,8 @@ Return only the JSON object, no additional text or explanations."""
         if not response_text:
             response_text = str(response)
 
-        # First try to parse as structured JSON response
-        entities = self._parse_structured_json_response(response_text)
+        # First try to parse as structured YAML response
+        entities = self._parse_structured_yaml_response(response_text)
 
         # If no entities found, fall back to pattern-based extraction
         if not entities:

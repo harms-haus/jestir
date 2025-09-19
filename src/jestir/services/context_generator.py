@@ -1,11 +1,11 @@
 """Context generation service using OpenAI for entity and relationship extraction."""
 
 import asyncio
-import json
 import logging
 import re
 from difflib import SequenceMatcher
 
+import yaml
 from openai import OpenAI
 
 from ..models.api_config import ExtractionAPIConfig, LightRAGAPIConfig
@@ -166,7 +166,7 @@ class ContextGenerator:
     def _fallback_extraction_prompt(self, input_text: str) -> str:
         """Fallback extraction prompt when templates fail."""
         return f"""
-Analyze the following story input and extract entities and relationships. Return a JSON response with this exact structure:
+Analyze the following story input and extract entities and relationships. Return a YAML response with this exact structure:
 
 {{
     "entities": [
@@ -210,12 +210,12 @@ Extract all mentioned characters, locations, items, and their relationships. Mar
     ) -> tuple[list[Entity], list[Relationship]]:
         """Parse the OpenAI response to extract entities and relationships."""
         try:
-            # Extract JSON from response
-            json_match = re.search(r"\{.*\}", content, re.DOTALL)
-            if not json_match:
-                raise ValueError("No JSON found in response")
+            # Extract YAML from response
+            yaml_match = re.search(r"entities:.*", content, re.DOTALL)
+            if not yaml_match:
+                raise ValueError("No YAML found in response")
 
-            data = json.loads(json_match.group())
+            data = yaml.safe_load(yaml_match.group())
 
             entities = []
             for entity_data in data.get("entities", []):
@@ -360,14 +360,14 @@ Analyze the following story_input and identify which graph_labels from the knowl
 
 <story_input>{input_text}</story_input>
 
-Respond with this exact JSON structure:
+Respond with this exact YAML structure:
 {{
     "mentioned_labels": ["label1", "label2", "label3"]
 }}
 
 Only include graph_labels that you are confident are likely to refer to entities mentioned in the story_input. Be conservative.
 
-IMPORTANT: Return only the JSON object, no additional text or explanations.
+IMPORTANT: Return only the YAML object, no additional text or explanations.
 """
 
             response = self.client.chat.completions.create(
@@ -409,12 +409,12 @@ IMPORTANT: Return only the JSON object, no additional text or explanations.
     def _parse_entity_names_response(self, content: str) -> list[str]:
         """Parse entity names from OpenAI response."""
         try:
-            # Extract JSON from response
-            json_match = re.search(r"\{.*\}", content, re.DOTALL)
-            if not json_match:
+            # Extract YAML from response
+            yaml_match = re.search(r"mentioned_labels:.*", content, re.DOTALL)
+            if not yaml_match:
                 return []
 
-            data = json.loads(json_match.group())
+            data = yaml.safe_load(yaml_match.group())
             mentioned_labels = data.get("mentioned_labels", [])
 
             if isinstance(mentioned_labels, list):
@@ -847,7 +847,7 @@ Analyze the following story input and extract relationships between the mentione
 
 Mentioned entities: {", ".join(entity_names)}
 
-Return a JSON response with this exact structure:
+Return a YAML response with this exact structure:
 {{
     "relationships": [
         {{
@@ -905,12 +905,12 @@ Extract all relationships between the mentioned entities.
     def _parse_relationships_from_response(self, content: str) -> list[Relationship]:
         """Parse relationships from OpenAI response."""
         try:
-            # Extract JSON from response
-            json_match = re.search(r"\{.*\}", content, re.DOTALL)
-            if not json_match:
+            # Extract YAML from response
+            yaml_match = re.search(r"relationships:.*", content, re.DOTALL)
+            if not yaml_match:
                 return []
 
-            data = json.loads(json_match.group())
+            data = yaml.safe_load(yaml_match.group())
             relationships = []
 
             for rel_data in data.get("relationships", []):
@@ -942,7 +942,7 @@ Analyze the following story input and extract entities and relationships.
 
 {labels_context}
 
-Return a JSON response with this exact structure:
+Return a YAML response with this exact structure:
 {{
     "entities": [
         {{

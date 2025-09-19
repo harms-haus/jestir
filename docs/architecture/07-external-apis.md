@@ -8,7 +8,7 @@
 - **Authentication:** API key via `LIGHTRAG_API_KEY` environment variable (optional)
 - **Architecture:** Hybrid system combining knowledge graphs with retrieval-augmented generation (RAG)
 - **Query Interface:** Natural language queries that return structured information
-- **Response Format:** Natural language by default, with optional structured formats (JSON, etc.)
+- **Response Format:** Natural language by default, with optional structured formats (YAML, etc.)
 - **Entity System:** Entities do not have traditional "ID"s - they are identified by natural language names and relationships
 
 **Key Capabilities:**
@@ -38,7 +38,7 @@
 **Integration Notes:**
 
 - Queries are processed in natural language and return natural language responses by default
-- Can request structured data formats (JSON) via response_type parameter
+- Can request structured data formats (YAML) via response_type parameter
 - Supports conversation history for context-aware responses
 - Token management for controlling response length and context size
 - **Entity Validation:** All entity matches are validated with confidence scoring to prevent incorrect matches
@@ -77,7 +77,7 @@
 
 - `query` (required): Natural language query string
 - `mode`: Query mode (local, global, hybrid, naive, mix, bypass)
-- `response_type`: Format for response (Multiple Paragraphs, Single Paragraph, Bullet Points, JSON, etc.)
+- `response_type`: Format for response (Multiple Paragraphs, Single Paragraph, Bullet Points, YAML, etc.)
 - `top_k`: Number of top entities/relationships to retrieve
 - `chunk_top_k`: Number of text chunks to retrieve and rerank
 - `conversation_history`: Previous conversation context

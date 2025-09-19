@@ -1,30 +1,28 @@
-Analyze the following story input and extract entities and relationships. Return a JSON response with this exact structure:
+Analyze the following story input and extract entities and relationships. Return a YAML response with this exact structure:
 
 <structure>
-{
-    "entities": [
-        {
-            "id": "char_001",
-            "type": "character",
-            "subtype": "protagonist",
-            "name": "Character Name",
-            "description": "Brief description",
-            "existing": false,
-            "properties": {}
-        }
-    ],
-    "relationships": [
-        {
-            "type": "visits",
-            "subject": "char_001",
-            "object": "loc_001",
-            "location": null,
-            "metadata": {}
-        }
-    ],
-    "driving_entities": ["char_001", "item_001", "item_004"]
-    "location_progression": ["location_001", "location_003", "location_002"]
-}
+entities:
+  - id: char_001
+    type: character
+    subtype: protagonist
+    name: Character Name
+    description: Brief description
+    existing: false
+    properties: {}
+relationships:
+  - type: visits
+    subject: char_001
+    object: loc_001
+    location: null
+    metadata: {}
+driving_entities:
+  - char_001
+  - item_001
+  - item_004
+location_progression:
+  - location_001
+  - location_003
+  - location_002
 </structure>
 Entity types: character, location, item
 Character subtypes: protagonist, antagonist, supporting, animal

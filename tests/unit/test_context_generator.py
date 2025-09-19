@@ -55,31 +55,22 @@ class TestContextGenerator:
 
         mock_response = Mock()
         mock_response.choices = [Mock()]
-        mock_response.choices[0].message.content = json.dumps(
-            {
-                "entities": [
-                    {
-                        "id": "char_001",
-                        "type": "character",
-                        "subtype": "protagonist",
-                        "name": "Arthur",
-                        "description": "A brave knight",
-                        "existing": False,
-                        "properties": {},
-                    },
-                ],
-                "relationships": [
-                    {
-                        "type": "visits",
-                        "subject": "char_001",
-                        "object": "loc_001",
-                        "location": None,
-                        "mentioned_at": ["Arthur visits the forest"],
-                        "metadata": {},
-                    },
-                ],
-            },
-        )
+        mock_response.choices[0].message.content = """entities:
+  - id: char_001
+    type: character
+    subtype: protagonist
+    name: Arthur
+    description: A brave knight
+    existing: false
+    properties: {}
+relationships:
+  - type: visits
+    subject: char_001
+    object: loc_001
+    location: null
+    mentioned_at:
+      - Arthur visits the forest
+    metadata: {}"""
         # Add usage attribute to mock
         mock_response.usage = Mock()
         mock_response.usage.prompt_tokens = 100
@@ -166,4 +157,4 @@ class TestContextGenerator:
         assert input_text in prompt
         assert "entities" in prompt
         assert "relationships" in prompt
-        assert "JSON" in prompt
+        assert "YAML" in prompt

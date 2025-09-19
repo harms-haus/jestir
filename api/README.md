@@ -184,7 +184,7 @@ Searches for entities in LightRAG API.
   - `filterType` (string): Filter by specific type
   - `limit` (number): Maximum number of results
   - `page` (number): Page number for pagination
-  - `format` (string): Output format ("table", "json", "yaml")
+  - `format` (string): Output format ("table", "yaml", "json")
   - `export` (string): Export results to file
   - `sessionId` (string): Session ID for tracking
 
@@ -200,7 +200,7 @@ Lists entities from LightRAG API.
   - `filterType` (string): Filter by specific type
   - `limit` (number): Maximum number of results
   - `page` (number): Page number for pagination
-  - `format` (string): Output format ("table", "json", "yaml")
+  - `format` (string): Output format ("table", "yaml", "json")
   - `export` (string): Export results to file
   - `sessionId` (string): Session ID for tracking
 
@@ -216,7 +216,7 @@ Gets token usage statistics and cost analysis.
 - `options` (object): Stats options
   - `context` (string): Context file to analyze
   - `period` (string): Report period ("daily", "weekly", "monthly")
-  - `format` (string): Output format ("table", "json", "yaml")
+  - `format` (string): Output format ("table", "yaml", "json")
   - `export` (string): Export report to file
   - `suggestions` (boolean): Show optimization suggestions
   - `sessionId` (string): Session ID for tracking

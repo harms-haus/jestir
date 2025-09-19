@@ -172,7 +172,7 @@ Search for entities in the LightRAG API.
 - `--type` - Filter by specific type (e.g., 'interior' for locations)
 - `--limit, -l` - Maximum number of results to show (default: 10)
 - `--page, -p` - Page number for pagination (default: 1)
-- `--format` - Output format (table, json, yaml) (default: table)
+- `--format` - Output format (table, yaml, json) (default: table)
 - `--export, -e` - Export results to YAML file
 
 **Examples:**
@@ -196,7 +196,7 @@ List entities from LightRAG API with optional filtering.
 - `--type` - Filter by specific type (e.g., 'interior' for locations)
 - `--limit, -l` - Maximum number of results to show (default: 20)
 - `--page, -p` - Page number for pagination (default: 1)
-- `--format` - Output format (table, json, yaml) (default: table)
+- `--format` - Output format (table, yaml, json) (default: table)
 - `--export, -e` - Export results to YAML file
 
 **Examples:**
